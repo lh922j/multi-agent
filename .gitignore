@@ -25,6 +25,7 @@ data/*.json.gz
 
 # ChromaDB (벡터 인덱스 — build_vector_index.py로 재생성)
 data/chroma/
+**/chroma/
 
 # 로그
 logs/
