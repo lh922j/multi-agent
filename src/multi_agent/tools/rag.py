@@ -105,6 +105,17 @@ def search_area_info(query: str, mode: str = "local") -> str:
             if not candidate_docs:
                 return _fallback_search(query)
 
+            # 쿼리 지역(구/동)과 후보 문서 지역이 완전히 다르면 fallback
+            # (예: "마포구" 질문에 강남권 문서만 나오는 경우 방지)
+            if loc_m:
+                query_loc_prefix = loc_m.group(1)[:2]  # "마포", "강남" 등
+                has_relevant = any(
+                    query_loc_prefix in name or query_loc_prefix in doc[:200]
+                    for name, doc in zip(candidate_names, candidate_docs)
+                )
+                if not has_relevant:
+                    return _fallback_search(query)
+
             # 3차: Cohere Re-ranking — 후보 중 가장 관련 높은 순으로 재정렬
             ranked_idx = _rerank(query, candidate_docs, top_n=n_results)
             parts = []
