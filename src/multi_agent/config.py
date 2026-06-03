@@ -14,10 +14,7 @@ class Settings(BaseSettings):
     # OpenAI
     openai_api_key: str = ""
 
-    # Anthropic (Claude)
-    anthropic_api_key: str = ""
-
-    # Pinecone
+    # Pinecone (미사용, 추후 제거 예정)
     pinecone_api_key: str = ""
     pinecone_index_name: str = "realestate-graphrag"
 
