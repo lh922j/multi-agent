@@ -1,0 +1,67 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "multi-agent"
+version = "0.1.0"
+description = "부동산 + 상권 AI 멀티에이전트 서비스 (AutoGen 0.4 Swarm + GraphRAG + Pinecone)"
+requires-python = ">=3.11"
+dependencies = [
+    # AutoGen 0.4 Swarm
+    "autogen-agentchat==0.4.9.3",
+    "autogen-core==0.4.9.3",
+    "autogen-ext[openai]==0.4.9.3",
+
+    # GraphRAG + Vector DB
+    "graphrag>=0.3.6",
+    "pinecone-client>=3.0",
+
+    # OpenAI (LLM + embeddings)
+    "openai>=1.30",
+
+    # DB
+    "sqlalchemy>=2.0",
+    "psycopg2-binary>=2.9",
+    "asyncpg>=0.29",
+
+    # ML (기존 realestate/ 모델 재사용)
+    "lightgbm>=4.0",
+    "scikit-learn>=1.4",
+    "pandas>=2.0",
+    "numpy>=1.26",
+
+    # API
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
+
+    # 프론트엔드
+    "streamlit>=1.40.0",
+    "pydeck>=0.9.0",
+    "nest-asyncio>=1.6",
+
+    # 유틸
+    "loguru>=0.7",
+    "httpx>=0.27",
+    "pydantic>=2.0",
+    "pydantic-settings>=2.0",
+    "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "ruff>=0.6",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

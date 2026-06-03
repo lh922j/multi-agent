@@ -1,0 +1,47 @@
+# 환경 변수 (API 키)
+.env
+.env.*
+!.env.example
+
+# 가상환경
+.venv/
+venv/
+env/
+
+# Python 캐시
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+
+# 대용량 데이터 파일 (CSV 원본)
+data/*.csv
+data/*.xls*
+data/*.json.gz
+
+# ChromaDB (벡터 인덱스 — build_vector_index.py로 재생성)
+data/chroma/
+
+# 로그
+logs/
+*.log
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Jupyter
+.ipynb_checkpoints/
+
+# pytest
+.pytest_cache/
+.coverage
+htmlcov/
