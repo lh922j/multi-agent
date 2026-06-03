@@ -169,7 +169,7 @@ def _fallback_search(query: str) -> str:
     # 학군/교통은 DB에 없으므로 LLM 지식 사용 유도
     qualitative = {"학군", "교통"}
     if topic_cats and all(t in qualitative for t in topic_cats):
-        return f"[DATA_NOT_AVAILABLE] '{query}' — 벡터 인덱스를 구축하면 실제 데이터로 답변할 수 있습니다. 보유한 지식으로 답변하세요."
+        return f"정보가 없습니다. '{query}'에 대해 보유한 지식으로 직접 답변하세요. 해당 지역의 학군(배정 학교·학원가), 교통(지하철 노선·주요 역) 등 일반적인 특성을 설명해주세요."
 
     # DB 상권·매매 집계
     loc_m = re.search(r"[\w가-힣]{1,6}(?:동|구|역|시)", query)

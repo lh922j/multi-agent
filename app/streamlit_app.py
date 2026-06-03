@@ -307,10 +307,29 @@ with col_map:
 
 # ── 사이드바 ──────────────────────────────────────────────────
 with st.sidebar:
-    st.header("설정")
-    st.caption(f"세션 ID: `{st.session_state.thread_id[:8]}...`")
+    st.header("🏢 부동산 AI")
 
-    if st.button("대화 초기화"):
+    # ── 대화 히스토리 ─────────────────────────────────────────
+    if st.session_state.messages:
+        st.subheader("대화 히스토리")
+        pairs = []
+        i = 0
+        msgs = st.session_state.messages
+        while i < len(msgs):
+            if msgs[i]["role"] == "user":
+                q = msgs[i]["content"]
+                a = msgs[i + 1]["content"] if i + 1 < len(msgs) and msgs[i + 1]["role"] == "assistant" else ""
+                pairs.append((q, a))
+                i += 2
+            else:
+                i += 1
+        for idx, (q, a) in enumerate(reversed(pairs), 1):
+            q_short = q[:30] + "..." if len(q) > 30 else q
+            with st.expander(f"{len(pairs) - idx + 1}. {q_short}"):
+                st.markdown(a[:300] + "..." if len(a) > 300 else a)
+        st.divider()
+
+    if st.button("대화 초기화", use_container_width=True):
         clear_history(st.session_state.thread_id)
         st.session_state.messages = []
         st.session_state.map_entries = []
@@ -318,22 +337,21 @@ with st.sidebar:
         st.rerun()
 
     st.divider()
-    st.markdown("""
-    **부동산**
-    - 역삼동 84㎡ 매매 최근 시세
-    - 강남역 근처 전세 1km 이내
-    - 강남구 이상거래 탐지
-    - 이 아파트 가격 예측해줘
+    with st.expander("예시 질문"):
+        st.markdown("""
+**부동산**
+- 역삼동 84㎡ 매매 최근 시세
+- 강남역 근처 전세 1km 이내
+- 강남구 이상거래 탐지
 
-    **상권**
-    - 홍대 상권 업종 현황
-    - 마포구 카페 몇 개야
-    - 강남구 음식점 영업률
+**상권**
+- 홍대 상권 업종 현황
+- 마포구 카페 몇 개야
 
-    **지역 정보**
-    - 마포구 학군 어때
-    - GTX 수혜 지역 알려줘
-    """)
+**지역 정보**
+- 마포구 학군 어때
+- GTX 수혜 지역 알려줘
+""")
 
 # ── 입력창 (페이지 하단 고정) ─────────────────────────────────
 if user_input := st.chat_input("질문을 입력하세요 (예: 강남구 84㎡ 매매 시세 알려줘)"):
