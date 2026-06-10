@@ -254,7 +254,7 @@ multi-agent/
 │   ├── import_transport_csv.py   # 지하철·버스 CSV → PostgreSQL
 │   └── migrate_db.py             # SQLite → PostgreSQL 마이그레이션
 ├── src/multi_agent/
-│   ├── agents/                   # 6개 에이전트 정의
+│   ├── agents/                   # 5개 에이전트 정의
 │   │   ├── router.py             # KeywordRouterAgent (규칙 기반)
 │   │   ├── data_query.py
 │   │   ├── prediction.py
