@@ -15,7 +15,7 @@
 | LLM | GPT-4o-mini |
 | 가격 예측 모델 | LightGBM (수도권 실거래 1,129,994건 학습, R² 0.88) |
 | Vector RAG | ChromaDB + Cohere Re-ranking (`rerank-multilingual-v3.0`) |
-| DB | PostgreSQL 14 (Docker) |
+| DB | PostgreSQL 17 (Docker) |
 | 모니터링 | Langfuse (에이전트별 실행 흐름 추적) |
 | 프론트엔드 | Streamlit + pydeck (지도 시각화) |
 | 평균 응답 시간 | **6.73초** (GEval 0.893 / 라우팅 100%) |
