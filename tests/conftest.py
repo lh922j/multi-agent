@@ -96,9 +96,11 @@ def router_agent():
             cancellation_token=None,
         )
         content = resp.chat_message.content if resp.chat_message else ""
-        # HandoffMessage → 대상 에이전트 이름 추출
+        # HandoffMessage → target 속성, TextMessage(offscope 거부 등) → source 속성
         target = getattr(resp.chat_message, "target", None)
-        return target or content
+        if target:
+            return target
+        return getattr(resp.chat_message, "source", content)
 
     def _route_sync(question: str) -> str:
         return asyncio.run(_route(question))
