@@ -99,7 +99,7 @@ def _parse_map_points(content: str) -> tuple[str, list[dict]]:
     try:
         payload = json.loads(m.group(1))
         map_points = payload.get("map_points", [])
-        # §MAP§ 바깥 텍스트 = ReportAgent가 작성한 답변
+        # §MAP§ 바깥 텍스트 = 전문 에이전트가 작성한 답변
         agent_text = _MAP_RE.sub("", content).strip()
         # agent_text가 비어 있을 때만 raw tool text(payload["text"]) 사용
         text = agent_text or payload.get("text", "")
