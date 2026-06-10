@@ -3,7 +3,7 @@
 > "역삼동 84㎡ 전세 시세 알려줘", "강남구 이상거래 탐지해줘", "상계동 학군 어때?"  
 > 자연어 한 문장으로 아파트 시세 조회·가격 예측·이상거래 탐지·지역 정보 검색이 가능한 AI 서비스입니다.
 
-![아키텍처](docs/architecture.png?v=2)
+![아키텍처](docs/architecture.png?v=3)
 
 ---
 
@@ -34,7 +34,7 @@ ChatGPT는 자연어로 질문할 수 있지만 실거래 데이터가 없습니
 
 ## 에이전트 구조
 
-질문이 들어오면 규칙 기반 라우터가 유형을 분류하고, 전문 에이전트가 처리한 뒤 ReportAgent가 최종 답변을 합성합니다.
+질문이 들어오면 규칙 기반 라우터가 유형을 분류하고, 전문 에이전트가 직접 최종 답변을 작성합니다. (ReportAgent 제거 — 응답 속도 34% 향상)
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -48,20 +48,15 @@ ChatGPT는 자연어로 질문할 수 있지만 실거래 데이터가 없습니
 └──┬──────────┬──────────┬──────────┬──────────┬──────────┘
    │          │          │          │          │
    ▼          ▼          ▼          ▼          ▼
-DataQuery  Prediction   RAG      Anomaly   (직접 거부)
-  Agent      Agent     Agent      Agent
-   │          │          │          │
-   └──────────┴──────────┴──────────┘
-                     │
-                     ▼
-          ┌─────────────────┐
-          │  ReportAgent    │  최종 자연어 응답 합성
-          │                 │  + 지도 데이터(§MAP§) 분리
-          └────────┬────────┘
-                   │ TERMINATE
-                   ▼
-           Streamlit UI 출력
-         (텍스트 답변 + pydeck 지도)
+DataQuery  Prediction   RAG      Anomaly   즉시 거부
+  Agent      Agent     Agent      Agent    (LLM 없음)
+   │          │          │          │          │
+   │  답변 + TERMINATE 직접 작성    │          │
+   └──────────┴──────────┴──────────┘          │
+                     │                          │
+                     ▼                          ▼
+           Streamlit UI 출력            "서비스 범위 외"
+         (텍스트 답변 + pydeck 지도)       0.2s 응답
 ```
 
 ### 에이전트별 역할
@@ -73,7 +68,6 @@ DataQuery  Prediction   RAG      Anomaly   (직접 거부)
 | **PredictionAgent** | GPT-4o-mini | `predict_price` `get_station_coordinates` | "강남구 84㎡ 가격 예측" |
 | **RAGAgent** | GPT-4o-mini | `search_area_info` | "상계동 학군", "대치동 교통" |
 | **AnomalyAgent** | GPT-4o-mini | `detect_anomaly` | "강남구 이상거래 탐지" |
-| **ReportAgent** | GPT-4o-mini | — | 항상 마지막, TERMINATE 출력 |
 
 ---
 
