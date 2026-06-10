@@ -1,17 +1,20 @@
+import json
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 from pydantic import BaseModel
+from sse_starlette.sse import EventSourceResponse
 
-from ..team import run_chat, clear_history
-from ..db.database import check_connection
+from ..team import stream_chat, run_chat, clear_history
+from ..db.database import check_connection, init_db
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     if check_connection():
         logger.info("PostgreSQL 연결 확인")
+        init_db()
     else:
         logger.warning("PostgreSQL 연결 실패 — DB 쿼리가 동작하지 않을 수 있습니다")
     logger.info("AutoGen Swarm 준비 완료")
@@ -21,7 +24,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="부동산 AI 멀티에이전트",
-    description="AutoGen 0.4 Swarm + GraphRAG + Pinecone 기반 부동산·상권 분석 API",
+    description="부동산·상권 분석 API",
     version="0.1.0",
     lifespan=lifespan,
 )
@@ -57,6 +60,23 @@ class ChatResponse(BaseModel):
 async def health():
     db_ok = check_connection()
     return {"status": "ok", "db": "connected" if db_ok else "disconnected"}
+
+
+@app.post("/chat/stream")
+async def chat_stream(request: ChatRequest):
+    """SSE 스트리밍 엔드포인트 — stream_chat() 이벤트를 실시간으로 전송."""
+    logger.info(f"[API] /chat/stream thread={request.thread_id} msg={request.message[:80]}")
+
+    async def event_generator():
+        try:
+            async for event in stream_chat(request.message, request.thread_id):
+                yield {"data": json.dumps(event, ensure_ascii=False)}
+        except Exception as e:
+            logger.error(f"[API] /chat/stream 오류: {e}")
+            error_event = {"type": "done", "answer": f"오류: {e}", "map_points": []}
+            yield {"data": json.dumps(error_event, ensure_ascii=False)}
+
+    return EventSourceResponse(event_generator())
 
 
 @app.post("/chat", response_model=ChatResponse)

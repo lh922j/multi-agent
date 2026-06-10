@@ -1,0 +1,14 @@
+.venv/
+.env
+__pycache__/
+*.pyc
+*.pyo
+.git/
+.gitignore
+*.md
+tests/
+data/
+logs/
+*.db
+*.pkl
+data/*.csv

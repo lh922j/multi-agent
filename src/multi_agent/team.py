@@ -20,7 +20,6 @@ from .agents.data_query import make_data_query_agent
 from .agents.prediction import make_prediction_agent
 from .agents.rag_agent import make_rag_agent
 from .agents.anomaly import make_anomaly_agent
-from .agents.report import make_report_agent
 from .config import settings
 
 # 세션별 히스토리
@@ -69,7 +68,6 @@ def _build_swarm() -> Swarm:
             make_prediction_agent(),
             make_rag_agent(),
             make_anomaly_agent(),
-            make_report_agent(),
         ],
         termination_condition=termination,
     )
@@ -145,6 +143,15 @@ async def stream_chat(
     final_text = ""
     map_points: list[dict] = []
     all_messages = []
+    primary_agent = ""   # OrchestratorAgent 제외한 전문 에이전트
+    saw_tool_map = False  # 도구 결과에서 §MAP§를 실제로 본 경우
+
+    # AnomalyAgent: 도구가 §MAP§를 반환하지 않지만 위치 마커가 필요 → fallback 항상 적용
+    # DataQueryAgent: 도구가 §MAP§를 반환한 경우(개별 거래)만 fallback 적용
+    #                 집계/카운트 쿼리는 §MAP§ 없음 → fallback 미적용
+    _LOC_FALLBACK_ALWAYS = {"AnomalyAgent"}
+    _LOC_FALLBACK_IF_SAW_MAP = {"DataQueryAgent"}
+    _SKIP_AGENTS = {"OrchestratorAgent"}
 
     try:
         async for msg in swarm.run_stream(task=task_messages):
@@ -155,6 +162,18 @@ async def stream_chat(
 
             all_messages.append(msg)
             source = getattr(msg, "source", "")
+
+            # 전문 에이전트 추적 (마지막으로 활성화된 에이전트 기준)
+            if source and source not in _SKIP_AGENTS and source in _AGENT_LABELS:
+                primary_agent = source
+
+            # 도구 실행 결과에서 §MAP§ 존재 여부 추적
+            if isinstance(msg, ToolCallExecutionEvent):
+                for item in getattr(msg, "content", []):
+                    item_str = getattr(item, "content", "")
+                    if isinstance(item_str, str) and "§MAP§" in item_str:
+                        saw_tool_map = True
+                        break
 
             # Langfuse span 기록 (v4)
             if langfuse and trace_span and source:
@@ -196,17 +215,18 @@ async def stream_chat(
                 return None
             return clean
 
-        # 1차: ReportAgent 메시지만 탐색
+        # 1차: 전문 에이전트(OrchestratorAgent 제외) 메시지 탐색
+        _SPECIALIST = {"DataQueryAgent", "PredictionAgent", "RAGAgent", "AnomalyAgent"}
         for msg in reversed(all_messages):
-            if getattr(msg, "source", "") == "ReportAgent":
+            if getattr(msg, "source", "") in _SPECIALIST:
                 clean = _is_valid(msg)
                 if clean:
                     text_candidate, pts = _parse_map_points(clean)
-                    if text_candidate:  # JSON noise 등으로 비어있으면 계속 탐색
+                    if text_candidate:
                         final_text = text_candidate
                         map_points = pts
                         break
-        # 2차: ReportAgent 메시지가 없거나 유효 텍스트 없으면 전체에서 탐색
+        # 2차: 전체 메시지에서 탐색
         if not final_text:
             for msg in reversed(all_messages):
                 clean = _is_valid(msg)
@@ -253,53 +273,62 @@ async def stream_chat(
             except Exception as e:
                 logger.warning(f"[langfuse] flush 실패: {e}")
 
-    # 역(驛) 이름이 질문에 있으면 항상 station 마커 추가 (기존 map_points 유무 무관)
-    _STATION_RE = re.compile(r"[\w가-힣]{1,6}역")
-    station_match = _STATION_RE.search(message)
-    if station_match:
-        station_name = station_match.group(0)
-        if not any(p.get("apt_name") == station_name for p in map_points):
-            try:
-                from .tools.query_nearby import _geocode
-                coords = _geocode(station_name)
-                if coords:
-                    map_points = list(map_points) + [{
-                        "apt_name": station_name,
-                        "dong_name": "",
-                        "area_exclusive": 0,
-                        "deal_amount": 0,
-                        "latitude": coords[0],
-                        "longitude": coords[1],
-                        "type": "station",
-                    }]
-                    logger.debug(f"[stream] 역 마커 추가: {station_name} {coords}")
-            except Exception as e:
-                logger.debug(f"[stream] 역 좌표 조회 실패: {e}")
+    # 지도 fallback 적용 조건:
+    #   - AnomalyAgent: 항상 (도구가 §MAP§ 없어도 위치 핀 필요)
+    #   - DataQueryAgent: 도구 결과에서 §MAP§를 실제로 본 경우만
+    #     (집계·카운트 쿼리는 §MAP§ 없음 → fallback 미적용)
+    _apply_fallback = (
+        primary_agent in _LOC_FALLBACK_ALWAYS
+        or (primary_agent in _LOC_FALLBACK_IF_SAW_MAP and saw_tool_map)
+    )
+    if _apply_fallback:
+        # 역(驛) 이름이 질문에 있으면 station 마커 추가 (기존 map_points 유무 무관)
+        _STATION_RE = re.compile(r"[\w가-힣]{1,6}역")
+        station_match = _STATION_RE.search(message)
+        if station_match:
+            station_name = station_match.group(0)
+            if not any(p.get("apt_name") == station_name for p in map_points):
+                try:
+                    from .tools.query_nearby import _geocode
+                    coords = _geocode(station_name)
+                    if coords:
+                        map_points = list(map_points) + [{
+                            "apt_name": station_name,
+                            "dong_name": "",
+                            "area_exclusive": 0,
+                            "deal_amount": 0,
+                            "latitude": coords[0],
+                            "longitude": coords[1],
+                            "type": "station",
+                        }]
+                        logger.debug(f"[stream] 역 마커 추가: {station_name} {coords}")
+                except Exception as e:
+                    logger.debug(f"[stream] 역 좌표 조회 실패: {e}")
 
-    # map_points가 없으면 질문에서 지역명(구·동) 추출 후 좌표 조회
-    if not map_points:
-        _LOC_RE = re.compile(r"[\w가-힣]{1,6}(?:동|구|시)")
-        loc_match = _LOC_RE.search(message)
-        if loc_match:
-            loc_name = loc_match.group(0)
-            try:
-                from .tools.query_nearby import _geocode
-                coords = _geocode(loc_name)
-                if coords:
-                    map_points = [{
-                        "apt_name": loc_name,
-                        "dong_name": "",
-                        "area_exclusive": 0,
-                        "deal_amount": 0,
-                        "latitude": coords[0],
-                        "longitude": coords[1],
-                        "type": "location",
-                    }]
-                    logger.debug(f"[stream] 위치 마커 추가: {loc_name} {coords}")
-            except Exception as e:
-                logger.debug(f"[stream] 위치 조회 실패: {e}")
+        # map_points가 없으면 질문에서 지역명(구·동) 추출 후 좌표 조회
+        if not map_points:
+            _LOC_RE = re.compile(r"[\w가-힣]{1,6}(?:동|구|시)")
+            loc_match = _LOC_RE.search(message)
+            if loc_match:
+                loc_name = loc_match.group(0)
+                try:
+                    from .tools.query_nearby import _geocode
+                    coords = _geocode(loc_name)
+                    if coords:
+                        map_points = [{
+                            "apt_name": loc_name,
+                            "dong_name": "",
+                            "area_exclusive": 0,
+                            "deal_amount": 0,
+                            "latitude": coords[0],
+                            "longitude": coords[1],
+                            "type": "location",
+                        }]
+                        logger.debug(f"[stream] 위치 마커 추가: {loc_name} {coords}")
+                except Exception as e:
+                    logger.debug(f"[stream] 위치 조회 실패: {e}")
 
-    # 히스토리 갱신 — user 질문 + ReportAgent 최종 답변만 저장
+    # 히스토리 갱신 — user 질문 + 최종 답변만 저장
     # (HandoffMessage·중간 에이전트 메시지는 다음 Swarm 라우팅을 혼란시키므로 제외)
     prev_history = _HISTORY.get(thread_id, [])
     clean_answer = final_text.replace("TERMINATE", "").strip() if final_text else ""
@@ -307,8 +336,8 @@ async def stream_chat(
         TextMessage(content=message, source="user"),
     ]
     if clean_answer:
-        new_entry.append(TextMessage(content=clean_answer, source="ReportAgent"))
-    _HISTORY[thread_id] = (prev_history + new_entry)[-10:]  # 최대 5턴(10개) 유지
+        new_entry.append(TextMessage(content=clean_answer, source="assistant"))
+    _HISTORY[thread_id] = (prev_history + new_entry)[-6:]   # 최대 3턴(6개) 유지
 
     yield {"type": "done", "answer": final_text or "응답을 생성하지 못했습니다.", "map_points": map_points}
 

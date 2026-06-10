@@ -3,8 +3,9 @@ DB 데이터로 Vector RAG 입력 문서(.txt) 자동 생성
 
 실행:
     python scripts/build_rag_docs.py
-    python scripts/build_rag_docs.py --top 50   # 상위 50개 동만
-    python scripts/build_rag_docs.py --sgg 11   # 서울만
+    python scripts/build_rag_docs.py --top 50              # 상위 50개 동만
+    python scripts/build_rag_docs.py --sgg 11              # 서울만
+    python scripts/build_rag_docs.py --top 200 --force-sgg 마포구,노원구  # 특정 구 강제 포함
 """
 import argparse
 import sys
@@ -45,6 +46,27 @@ def get_top_dongs(conn, top_n: int, sgg_prefix: str) -> list[tuple[str, str]]:
         LIMIT :top_n
     """), {"top_n": top_n}).fetchall()
     return [(r.dong_name, r.sgg_code) for r in rows]
+
+
+def get_dongs_by_sgg_names(conn, sgg_names: list[str]) -> list[tuple[str, str]]:
+    """구 이름으로 해당 구의 모든 동 반환 (force-sgg용)."""
+    codes_map = _load_codes()
+    result: list[tuple[str, str]] = []
+    for sgg_name in sgg_names:
+        codes = codes_map.get(sgg_name, [])
+        if not codes:
+            logger.warning(f"[force-sgg] '{sgg_name}' 코드를 찾을 수 없습니다. _district.py 확인 필요")
+            continue
+        for code in codes:
+            rows = conn.execute(text("""
+                SELECT DISTINCT dong_name, sgg_code::text
+                FROM apt_trade
+                WHERE sgg_code::text = :code
+                  AND dong_name IS NOT NULL AND dong_name != ''
+            """), {"code": code}).fetchall()
+            result.extend((r.dong_name, r.sgg_code) for r in rows)
+            logger.info(f"[force-sgg] {sgg_name} (코드 {code}): {len(rows)}개 동 추가")
+    return result
 
 
 def build_document(conn, dong_name: str, sgg_code: str) -> str:
@@ -110,11 +132,11 @@ def build_document(conn, dong_name: str, sgg_code: str) -> str:
             ROUND(AVG(CASE WHEN NOT is_jeonse THEN deposit END)::numeric, 0) as avg_wolse_dep,
             ROUND(AVG(CASE WHEN NOT is_jeonse THEN monthly_rent END)::numeric, 0) as avg_wolse_rent
         FROM apt_rent
-        WHERE dong_name = :dong AND deal_year >= 2022
+        WHERE dong_name = :dong AND deal_year >= 2020
     """), {"dong": dong_name}).fetchone()
 
     if rent and (rent.jeonse_cnt or rent.wolse_cnt):
-        lines.append("## 전세·월세 현황 (2022년~)")
+        lines.append("## 전세·월세 현황 (2020년~)")
         if rent.jeonse_cnt:
             lines.append(f"- 전세 거래: {rent.jeonse_cnt:,}건, 평균 보증금 {rent.avg_jeonse/10000:.1f}억")
         if rent.wolse_cnt:
@@ -245,6 +267,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--top", type=int, default=100, help="생성할 동 수 (기본 100)")
     parser.add_argument("--sgg", type=str, default="", help="sgg_code 앞자리 필터 (예: 11=서울, 28=인천)")
+    parser.add_argument("--force-sgg", type=str, default="", help="거래량 순위 무관하게 강제 포함할 구 이름 (쉼표 구분, 예: 마포구,노원구)")
     args = parser.parse_args()
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -252,6 +275,18 @@ def main():
 
     with engine.connect() as conn:
         dongs = get_top_dongs(conn, args.top, args.sgg)
+
+        # --force-sgg 로 지정한 구의 동을 중복 없이 추가
+        if args.force_sgg:
+            force_names = [s.strip() for s in args.force_sgg.split(",") if s.strip()]
+            forced = get_dongs_by_sgg_names(conn, force_names)
+            existing = {(d, c) for d, c in dongs}
+            for dong, code in forced:
+                if (dong, code) not in existing:
+                    dongs.append((dong, code))
+                    existing.add((dong, code))
+            logger.info(f"force-sgg 추가 후 총 동 수: {len(dongs)}개")
+
         logger.info(f"대상 동 수: {len(dongs)}개")
 
         success, skip = 0, 0

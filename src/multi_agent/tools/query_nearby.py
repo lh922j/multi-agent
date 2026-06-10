@@ -1,5 +1,7 @@
 import json
 import math
+from functools import lru_cache
+
 import httpx
 from loguru import logger
 from sqlalchemy import text
@@ -22,6 +24,7 @@ def _bbox(lat: float, lon: float, radius_km: float):
     return lat - lat_d, lat + lat_d, lon - lon_d, lon + lon_d
 
 
+@lru_cache(maxsize=512)
 def _geocode(place_name: str) -> tuple[float, float] | None:
     if not settings.kakao_api_key or not place_name.strip():
         return None

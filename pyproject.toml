@@ -34,6 +34,7 @@ dependencies = [
     # API
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.30.0",
+    "sse-starlette>=1.6",
 
     # 프론트엔드
     "streamlit>=1.40.0",
@@ -53,6 +54,13 @@ dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.23",
     "ruff>=0.6",
+]
+eval = [
+    # LLM-as-a-Judge + RAG 평가
+    "deepeval>=1.4",
+    # 결과 리포트
+    "tabulate>=0.9",
+    "matplotlib>=3.8",
 ]
 
 [tool.setuptools.packages.find]

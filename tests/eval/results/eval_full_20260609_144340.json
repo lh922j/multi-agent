@@ -1,0 +1,58 @@
+{
+  "timestamp": "20260609_144340",
+  "mode": "full",
+  "summary": {
+    "n": 3,
+    "routing_accuracy": 1.0,
+    "map_points_accuracy": 1.0,
+    "avg_latency_sec": 14.813,
+    "avg_answer_relevancy": 0.8472,
+    "avg_faithfulness": 1.0,
+    "avg_geval": 0.7272,
+    "avg_numerical_accuracy": 0.0
+  },
+  "details": [
+    {
+      "id": "commercial-01",
+      "input": "홍대 상권 업종 현황 알려줘",
+      "expected_agent": "DataQueryAgent",
+      "actual_agent": "DataQueryAgent",
+      "routing_correct": true,
+      "map_points_correct": true,
+      "latency_sec": 11.0,
+      "answer_relevancy": 1.0,
+      "faithfulness": 1.0,
+      "geval": 0.840733340004593,
+      "numerical_accuracy": 0.0,
+      "error": ""
+    },
+    {
+      "id": "prediction-01",
+      "input": "강남구 아파트 가격 앞으로 어떻게 될 것 같아?",
+      "expected_agent": "PredictionAgent",
+      "actual_agent": "PredictionAgent",
+      "routing_correct": true,
+      "map_points_correct": true,
+      "latency_sec": 23.23,
+      "answer_relevancy": 0.6666666666666666,
+      "faithfulness": 1.0,
+      "geval": 0.5479733014766215,
+      "numerical_accuracy": 0.0,
+      "error": ""
+    },
+    {
+      "id": "anomaly-01",
+      "input": "강남구 이상거래 탐지해줘",
+      "expected_agent": "AnomalyAgent",
+      "actual_agent": "AnomalyAgent",
+      "routing_correct": true,
+      "map_points_correct": true,
+      "latency_sec": 10.21,
+      "answer_relevancy": 0.875,
+      "faithfulness": 1.0,
+      "geval": 0.7927469000688726,
+      "numerical_accuracy": 0.0,
+      "error": ""
+    }
+  ]
+}

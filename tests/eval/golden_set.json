@@ -1,0 +1,314 @@
+[
+  {
+    "id": "trade-01",
+    "input": "역삼동 84㎡ 아파트 최근 매매 시세 알려줘",
+    "expected_agent": "DataQueryAgent",
+    "expected_map_points": true,
+    "reference": "역삼동 84㎡ 아파트의 최근 매매 시세는 약 20억~30억 원 수준입니다. 실거래 기준으로 래미안역삼 등 주요 단지에서 거래가 이뤄지고 있습니다.",
+    "context": "역삼동은 강남구에 위치하며 래미안역삼, 개나리SK뷰 등 주요 아파트 단지가 있다. 84㎡ 평형 기준 매매가는 20억~30억 원대가 형성되어 있다.",
+    "criteria": "서울 부동산 시세를 정확하고 구체적으로 설명하는가",
+    "tags": [
+      "trade",
+      "data_query",
+      "map"
+    ]
+  },
+  {
+    "id": "trade-02",
+    "input": "마포구 아파트 매매 거래 현황 알려줘",
+    "expected_agent": "DataQueryAgent",
+    "expected_map_points": true,
+    "reference": "마포구 아파트 매매는 최근 공덕동, 아현동, 서교동 중심으로 활발히 이뤄지고 있으며 84㎡ 기준 평균 12억~18억 원 수준입니다.",
+    "context": "마포구에는 공덕자이, 마포래미안푸르지오, 아현e편한세상 등 주요 단지가 있다. 최근 거래는 공덕역, 마포역 인근에 집중된다.",
+    "criteria": "지역 매매 현황을 수치와 함께 명확하게 제시하는가",
+    "tags": [
+      "trade",
+      "data_query",
+      "map"
+    ]
+  },
+  {
+    "id": "trade-03",
+    "input": "강남역 근처 전세 1km 이내 매물 알려줘",
+    "expected_agent": "DataQueryAgent",
+    "expected_map_points": true,
+    "reference": "강남역 반경 1km 이내 전세 매물로는 역삼동, 논현동, 서초동 일대 아파트가 있으며 보증금은 84㎡ 기준 10억~15억 원 수준입니다.",
+    "context": "강남역은 서초구와 강남구 경계에 위치한다. 인근 역삼동과 서초동에 고급 주거 단지가 다수 분포한다.",
+    "criteria": "반경 기반 검색 결과를 위치 정보와 함께 제공하는가",
+    "tags": [
+      "rent",
+      "data_query",
+      "map",
+      "nearby"
+    ]
+  },
+  {
+    "id": "trade-04",
+    "input": "성동구 전월세 최근 거래 알려줘",
+    "expected_agent": "DataQueryAgent",
+    "expected_map_points": true,
+    "reference": "성동구의 최근 전월세 거래는 왕십리, 금호동, 옥수동 중심으로 이루어지고 있으며 84㎡ 전세가는 6억~9억 원 수준입니다.",
+    "context": "성동구는 왕십리뉴타운, 금호어울림, 옥수파크힐스 등 주요 단지가 있다. 2호선·5호선 역세권으로 수요가 꾸준하다.",
+    "criteria": "전월세 시세와 지역 특성을 함께 설명하는가",
+    "tags": [
+      "rent",
+      "data_query",
+      "map"
+    ]
+  },
+  {
+    "id": "trade-05",
+    "input": "서울 아파트 평균 매매가 어떻게 돼?",
+    "expected_agent": "DataQueryAgent",
+    "expected_map_points": true,
+    "reference": "서울 아파트 평균 매매가는 84㎡ 기준 약 11억~12억 원 수준이며, 강남3구(강남·서초·송파)는 평균 20억 원을 상회합니다.",
+    "context": "서울시 25개 자치구별 아파트 실거래가 평균은 강남구가 가장 높고 노원구, 도봉구가 상대적으로 낮다.",
+    "criteria": "서울 전체 평균과 구별 편차를 균형 있게 설명하는가",
+    "tags": [
+      "trade",
+      "data_query",
+      "aggregate"
+    ]
+  },
+  {
+    "id": "commercial-01",
+    "input": "홍대 상권 업종 현황 알려줘",
+    "expected_agent": "DataQueryAgent",
+    "expected_map_points": true,
+    "reference": "홍대(서교동) 상권 주요 업종은 음식 약 2,500개, 소매 약 1,400개 순으로 분포합니다.",
+    "context": "홍대 상권은 서울시 마포구 서교동 일대로 청년 문화와 예술을 기반으로 한 상권이다. 유동인구가 많고 음식점, 카페, 의류 등 다양한 업종이 밀집해 있다.",
+    "criteria": "상권 업종 분포를 구체적인 업체 수(개)와 함께 설명하는가",
+    "tags": [
+      "commercial",
+      "data_query",
+      "map"
+    ]
+  },
+  {
+    "id": "commercial-02",
+    "input": "마포구 카페 몇 개야",
+    "expected_agent": "DataQueryAgent",
+    "expected_map_points": true,
+    "reference": "마포구 카페는 총 약 1,700개 이상 영업 중입니다.",
+    "context": "마포구 상권 데이터 기준으로 커피 및 음료 관련 업종 점포가 집중된 지역은 서교동, 합정동, 연남동이다.",
+    "criteria": "카페 점포 수를 정확히 파악하여 답변하는가",
+    "tags": [
+      "commercial",
+      "data_query",
+      "count"
+    ]
+  },
+  {
+    "id": "commercial-03",
+    "input": "강남구 편의점 분포 현황",
+    "expected_agent": "DataQueryAgent",
+    "expected_map_points": true,
+    "reference": "강남구 카페는 약 2,000개 이상 영업 중이며, 비알코올 카페가 주를 이룹니다.",
+    "context": "강남구는 테헤란로 일대 오피스 밀집 지역과 강남역, 선릉역 등 역세권을 중심으로 편의점 수요가 높다.",
+    "criteria": "카페 분포와 업체 수를 구체적으로 설명하는가",
+    "tags": [
+      "commercial",
+      "data_query",
+      "map"
+    ]
+  },
+  {
+    "id": "prediction-01",
+    "input": "강남구 아파트 가격 앞으로 어떻게 될 것 같아?",
+    "expected_agent": "PredictionAgent",
+    "expected_map_points": false,
+    "reference": "강남구 84㎡ 아파트 예측 매매가는 약 25억~35억원 수준입니다.",
+    "context": "아파트 가격 예측은 과거 실거래가, 면적, 건축연도, 역세권 거리 등 피처를 학습한 LightGBM 모델을 사용한다.",
+    "criteria": "예측 매매가를 구체적인 가격으로 제시하며 불확실성도 언급하는가",
+    "tags": [
+      "prediction",
+      "forecast"
+    ]
+  },
+  {
+    "id": "prediction-02",
+    "input": "마포구 84㎡ 아파트 내년에 오를까 내릴까",
+    "expected_agent": "PredictionAgent",
+    "expected_map_points": false,
+    "reference": "마포구 84㎡ 아파트 예측 매매가는 약 8억~12억원 수준입니다.",
+    "context": "마포구 아파트 시장은 공덕·아현 재개발 수요와 도심 접근성이 가격을 지지하는 요인이다.",
+    "criteria": "예측 방향과 구체적인 예측 가격을 균형 있게 답변하는가",
+    "tags": [
+      "prediction",
+      "forecast"
+    ]
+  },
+  {
+    "id": "prediction-03",
+    "input": "성수동 아파트 가격 전망 알려줘",
+    "expected_agent": "PredictionAgent",
+    "expected_map_points": false,
+    "reference": "성수동은 IT기업 클러스터와 재개발 호재로 상승 모멘텀이 강하게 작용하고 있어 단기 상승 가능성이 높습니다.",
+    "context": "성수동은 성동구에 위치하며 뚝섬역 인근 재개발과 카카오, 현대차 본사 이전 등 개발 호재가 있다.",
+    "criteria": "지역 특성과 연계한 예측 근거를 제시하는가",
+    "tags": [
+      "prediction",
+      "forecast"
+    ]
+  },
+  {
+    "id": "anomaly-01",
+    "input": "강남구 이상거래 탐지해줘",
+    "expected_agent": "AnomalyAgent",
+    "expected_map_points": true,
+    "reference": "강남구 이상거래는 총 200건 이상으로, 전체 거래의 약 2% 수준입니다.",
+    "context": "이상거래 탐지는 Isolation Forest 알고리즘을 사용하며 면적 대비 가격, 계절성, 거래량 등을 피처로 활용한다.",
+    "criteria": "이상거래 건수와 비율을 구체적으로 제시하며 의심 사례를 설명하는가",
+    "tags": [
+      "anomaly",
+      "detection",
+      "map"
+    ]
+  },
+  {
+    "id": "anomaly-02",
+    "input": "최근 비정상적인 부동산 거래 있어?",
+    "expected_agent": "AnomalyAgent",
+    "expected_map_points": true,
+    "reference": "송파구 이상거래는 총 300건 이상으로, 전체 거래의 약 2% 수준입니다.",
+    "context": "비정상 거래는 특수관계인 간 거래, 허위 계약, 급매 등의 원인이 있을 수 있다.",
+    "criteria": "비정상 거래 건수와 비율을 구체적으로 제시하는가",
+    "tags": [
+      "anomaly",
+      "detection",
+      "map"
+    ]
+  },
+  {
+    "id": "rag-01",
+    "input": "마포구와 비슷한 가격대의 다른 지역 5군데 알려줘",
+    "expected_agent": "DataQueryAgent",
+    "expected_map_points": false,
+    "reference": "마포구 평균 매매가(약 14~15억원)와 유사한 지역으로 광진구, 성동구, 종로구, 동작구, 양천구 등이 있습니다.",
+    "context": "마포구 아파트 평균 매매가는 약 14.6억원이며, 유사 가격대 지역으로 광진구(14.3억), 성동구(15.8억), 종로구(13.2억), 동작구(13.2억), 양천구(13.2억) 등이 있다.",
+    "criteria": "마포구의 평균 매매가를 언급하고, 비슷한 가격대의 서울 내 다른 구(區) 5곳 이상을 구체적인 가격과 함께 나열하는가",
+    "tags": [
+      "rag",
+      "comparison",
+      "similar_region"
+    ]
+  },
+  {
+    "id": "rag-02",
+    "input": "강남구 학군 어때?",
+    "expected_agent": "RAGAgent",
+    "expected_map_points": false,
+    "reference": "강남구는 대치동을 중심으로 은마아파트 학군, 대치학원가 등 전국 최고 수준의 학군을 형성하고 있습니다. 주요 명문 고등학교와 학원이 밀집해 있습니다.",
+    "context": "대치동은 서울에서 학원 밀도가 가장 높은 지역으로 대치삼성, 한화, 래미안 등 단지가 학군 수요로 높은 프리미엄을 형성한다.",
+    "criteria": "학군 정보를 구체적이고 신뢰할 수 있게 설명하는가",
+    "tags": [
+      "rag",
+      "school_district",
+      "education"
+    ]
+  },
+  {
+    "id": "rag-03",
+    "input": "강남구 재건축 재개발 현황 알려줘",
+    "expected_agent": "RAGAgent",
+    "expected_map_points": false,
+    "reference": "강남구는 총 101개 정비사업 구역이 있으며, 개포주공1단지(부분준공), 개포주공5단지(관리처분인가), 압구정2~6구역(조합설립인가) 등 다양한 단계로 진행 중입니다. 사업시행인가 이상 진행된 구역이 24개에 달합니다.",
+    "context": "강남구 재건축 정비사업: 준공 3개, 착공 8개, 관리처분인가 5개, 사업시행인가 5개, 조합설립인가 14개 구역. 개포주공1단지(부분준공, 399,742㎡), 개포주공5단지(관리처분인가, 56,173㎡), 압구정2구역(조합설립인가, 189,555㎡) 등.",
+    "criteria": "강남구 재건축 현황과 주요 구역을 구체적으로 설명하는가",
+    "tags": [
+      "rag",
+      "redevelopment",
+      "reconstruction"
+    ]
+  },
+  {
+    "id": "rag-04",
+    "input": "은평구 재건축 호재 있어?",
+    "expected_agent": "RAGAgent",
+    "expected_map_points": false,
+    "reference": "은평구는 응암동, 갈현동, 불광동 일대 노후 아파트를 중심으로 재건축 및 재개발 사업이 진행 중입니다. 연신내·불광 역세권 개발이 주요 호재입니다.",
+    "context": "은평구 재건축 이슈는 노후 저층 단지 위주이며 연신내·불광 역세권 개발이 주요 호재다.",
+    "criteria": "재건축 호재의 현황과 전망을 균형 있게 설명하는가",
+    "tags": [
+      "rag",
+      "redevelopment",
+      "reconstruction"
+    ]
+  },
+  {
+    "id": "rag-05",
+    "input": "강남구랑 용산구 입지 비교해줘",
+    "expected_agent": "RAGAgent",
+    "expected_map_points": false,
+    "reference": "강남구는 학군·상권·업무 집적도에서 최고 수준이며, 용산구는 도심 접근성과 개발 잠재력(한남재개발)이 강점입니다. 가격은 강남구가 소폭 높습니다.",
+    "context": "강남구와 용산구는 서울 최상위 부동산 시장을 형성한다. 용산은 대통령실 이전, 한남뉴타운 등 개발 모멘텀이 있고, 강남은 안정적 수요가 특징이다.",
+    "criteria": "두 지역의 입지를 다각도로 비교하여 공정하게 설명하는가",
+    "tags": [
+      "rag",
+      "comparison",
+      "location"
+    ]
+  },
+  {
+    "id": "offscope-01",
+    "input": "오늘 날씨 어때?",
+    "expected_agent": "OrchestratorAgent",
+    "expected_map_points": false,
+    "reference": "죄송합니다. 저는 부동산 및 상권 분석 전문 AI입니다. 날씨 정보는 제공하기 어렵습니다.",
+    "context": "",
+    "criteria": "범위 외 질문을 정중하게 거절하면서 서비스 범위를 안내하는가",
+    "tags": [
+      "offscope",
+      "rejection"
+    ]
+  },
+  {
+    "id": "offscope-02",
+    "input": "삼성전자 주식 사도 될까?",
+    "expected_agent": "OrchestratorAgent",
+    "expected_map_points": false,
+    "reference": "저는 부동산 및 상권 분석 전문 AI입니다. 주식 투자 조언은 제 전문 범위가 아닙니다.",
+    "context": "",
+    "criteria": "서비스 범위를 벗어난 질문을 명확히 거절하는가",
+    "tags": [
+      "offscope",
+      "rejection"
+    ]
+  },
+  {
+    "id": "multiturn-01",
+    "turns": [
+      "강남구 아파트 최근 매매 시세 알려줘",
+      "같은 지역 전세 보증금도 알려줘"
+    ],
+    "input": "같은 지역 전세 보증금도 알려줘",
+    "expected_agent": "DataQueryAgent",
+    "expected_map_points": true,
+    "reference": "강남구 아파트 전세 보증금은 84㎡ 기준 약 10억~15억 원 수준입니다.",
+    "context": "강남구는 서울시 강남구로 고급 주거 지역이다. 전세 보증금은 매매가의 50~60% 수준으로 형성된다.",
+    "criteria": "이전 대화에서 언급된 '강남구'를 맥락으로 파악하여 해당 지역의 전세 보증금을 구체적으로 답변해야 한다.",
+    "tags": [
+      "multiturn",
+      "rent",
+      "context_retention"
+    ]
+  },
+  {
+    "id": "multiturn-02",
+    "turns": [
+      "홍대 근처 상권 주요 업종 알려줘",
+      "그중에서 카페 업체는 몇 개야?"
+    ],
+    "input": "그중에서 카페 업체는 몇 개야?",
+    "expected_agent": "DataQueryAgent",
+    "expected_map_points": false,
+    "reference": "홍대(서교동) 카페 업체 수는 약 400~600개 수준입니다.",
+    "context": "홍대 상권은 서울시 마포구 서교동 일대로 카페와 음식점이 밀집해 있다.",
+    "criteria": "이전 대화에서 언급된 '홍대' 지역을 맥락으로 파악하여 해당 지역 카페 업체 수를 구체적으로 답변해야 한다.",
+    "tags": [
+      "multiturn",
+      "commercial",
+      "context_retention"
+    ]
+  }
+]

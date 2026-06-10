@@ -1,0 +1,31 @@
+{
+  "timestamp": "20260610_015122",
+  "mode": "full",
+  "summary": {
+    "n": 1,
+    "routing_accuracy": 1.0,
+    "map_points_accuracy": 1.0,
+    "avg_latency_sec": 6.7128,
+    "avg_answer_relevancy": 1.0,
+    "avg_faithfulness": 0.8571,
+    "avg_geval": 0.6106,
+    "avg_numerical_accuracy": null
+  },
+  "details": [
+    {
+      "id": "rag-01",
+      "input": "마포구와 비슷한 가격대의 다른 지역 5군데 알려줘",
+      "expected_agent": "DataQueryAgent",
+      "actual_agent": "DataQueryAgent",
+      "routing_correct": true,
+      "map_points_correct": true,
+      "latency_sec": 6.71,
+      "answer": "마포구 평균 매매가는 14.6억원입니다. 비슷한 가격대의 다른 지역은 다음과 같습니다.\n\n| 구이름   | 평균 매매가 |\n|----------|--------------|\n| 광진구   | 14.3억원     |\n| 성동구   | 15.8억원     |\n| 종로구   | 13.2억원     |\n| 동작구   | 13.2억원     |\n| 양천구   | 13.2억원     |\n\n성동구는 마포구보다 약간 높은 가격대입니다.",
+      "answer_relevancy": 1.0,
+      "faithfulness": 0.8571428571428571,
+      "geval": 0.6106319631679875,
+      "numerical_accuracy": null,
+      "error": ""
+    }
+  ]
+}

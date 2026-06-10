@@ -2,7 +2,7 @@
 import re
 from autogen_agentchat.agents import BaseChatAgent
 from autogen_agentchat.base import Response
-from autogen_agentchat.messages import HandoffMessage, TextMessage, ChatMessage
+from autogen_agentchat.messages import HandoffMessage, TextMessage, ChatMessage, StopMessage
 from autogen_core import CancellationToken
 
 
@@ -15,8 +15,12 @@ _RULES: list[tuple[list[str], str]] = [
     # 가격 예측
     (["예측", "전망", "얼마가 될", "앞으로", "미래 가격", "오를까", "내릴까"], "PredictionAgent"),
 
-    # 지역 특성 (학군·교통·개발호재) — 가격 키워드가 없는 경우
-    (["학군", "교통", "지하철", "개발", "호재", "재건축", "재개발",
+    # 가격 비교·유사 지역 찾기 — DB 집계 필요
+    (["비슷한 가격", "같은 가격대", "유사 가격", "가격대", "구별 평균", "평균 매매가", "평균가"], "DataQueryAgent"),
+
+    # 지역 특성 — 학군·교통·개발호재 등
+    (["비슷한", "유사한", "유사 지역",
+      "학군", "교통", "지하철", "개발", "호재", "재건축", "재개발",
       "gtx", "GTX", "학교", "교육", "생활권", "입지"], "RAGAgent"),
 
     # 상권 조회
@@ -36,11 +40,13 @@ _OFFSCOPE_PATTERNS = re.compile(
 )
 
 
+_OFFSCOPE_REPLY = "죄송합니다. 저는 부동산 및 상권 분석 전문 AI입니다. 해당 질문은 제 서비스 범위를 벗어납니다. 아파트 시세, 상권 현황, 이상거래 탐지 등 부동산 관련 질문을 도와드릴 수 있습니다."
+
+
 def _route(message: str) -> str:
     """메시지를 분석해 적절한 에이전트 이름을 반환합니다."""
-    # 범위 외 질문 → ReportAgent가 거부 메시지 처리
     if _OFFSCOPE_PATTERNS.search(message):
-        return "ReportAgent"
+        return "OrchestratorAgent"
 
     msg_lower = message.lower()
     for patterns, target in _RULES:
@@ -77,6 +83,15 @@ class KeywordRouterAgent(BaseChatAgent):
                 break
 
         target = _route(user_text)
+
+        # 범위 외 질문: LLM 없이 직접 거부 메시지 반환 + 종료
+        if target == "OrchestratorAgent":
+            return Response(
+                chat_message=TextMessage(
+                    source=self.name,
+                    content=f"{_OFFSCOPE_REPLY}\nTERMINATE",
+                )
+            )
 
         return Response(
             chat_message=HandoffMessage(
