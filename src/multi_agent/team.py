@@ -34,7 +34,6 @@ _AGENT_LABELS = {
     "PredictionAgent":   "📊 가격 예측 중",
     "RAGAgent":          "🗺️ 지역 정보 검색 중",
     "AnomalyAgent":      "⚠️ 이상거래 탐지 중",
-    "ReportAgent":       "✍️ 답변 작성 중",
 }
 
 
@@ -201,7 +200,7 @@ async def stream_chat(
                     logger.debug(f"[stream] tool_call: {tool_name}")
                     yield {"type": "tool", "agent": source, "tool": tool_name}
 
-        # 최종 답변 추출 — ReportAgent 메시지 우선, handoff 메시지 제외
+        # 최종 답변 추출 — handoff 메시지 제외
         _SKIP = ("transferred to", "adopting the role", "handoff to")
 
         def _is_valid(msg) -> str | None:
