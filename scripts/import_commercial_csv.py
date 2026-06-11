@@ -71,7 +71,7 @@ def main():
         default=None,
         help="특정 CSV 파일 경로. 미지정 시 data/ 폴더의 모든 CSV 파일을 임포트",
     )
-    parser.add_argument("--encoding", default="utf-8-sig", help="파일 인코딩 (기본: utf-8-sig)")
+    parser.add_argument("--encoding", default="cp949", help="파일 인코딩 (기본: cp949)")
     args = parser.parse_args()
 
     data_dir = Path(__file__).parents[1] / "data"
