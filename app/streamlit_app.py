@@ -36,6 +36,75 @@ st.set_page_config(
     layout="wide",
 )
 
+# ── DB 세션 영속성 헬퍼 ─────────────────────────────────────
+
+def _db_load_sessions() -> list[dict]:
+    """PostgreSQL에서 세션 목록을 불러옴."""
+    try:
+        from sqlalchemy import text
+        from multi_agent.db.database import get_engine
+        engine = get_engine()
+        with engine.connect() as conn:
+            rows = conn.execute(text(
+                "SELECT session_id, thread_id, title, messages_json, map_entries_json "
+                "FROM chat_session ORDER BY updated_at DESC LIMIT 30"
+            )).fetchall()
+        sessions = []
+        for r in rows:
+            sessions.append({
+                "id": r.session_id,
+                "thread_id": r.thread_id,
+                "title": r.title,
+                "messages": json.loads(r.messages_json or "[]"),
+                "map_entries": json.loads(r.map_entries_json or "[]"),
+            })
+        return sessions
+    except Exception:
+        return []
+
+
+def _db_save_session(sess: dict):
+    """세션을 PostgreSQL에 upsert."""
+    try:
+        from sqlalchemy import text
+        from multi_agent.db.database import get_engine
+        engine = get_engine()
+        with engine.connect() as conn:
+            conn.execute(text("""
+                INSERT INTO chat_session
+                    (session_id, thread_id, title, messages_json, map_entries_json, created_at, updated_at)
+                VALUES
+                    (:sid, :tid, :title, :msgs, :maps, NOW(), NOW())
+                ON CONFLICT (session_id) DO UPDATE SET
+                    title = EXCLUDED.title,
+                    messages_json = EXCLUDED.messages_json,
+                    map_entries_json = EXCLUDED.map_entries_json,
+                    updated_at = NOW()
+            """), {
+                "sid": sess["id"],
+                "tid": sess["thread_id"],
+                "title": sess["title"],
+                "msgs": json.dumps(sess["messages"], ensure_ascii=False),
+                "maps": json.dumps(sess["map_entries"], ensure_ascii=False),
+            })
+            conn.commit()
+    except Exception:
+        pass
+
+
+def _db_delete_all_sessions():
+    """모든 세션을 DB에서 삭제."""
+    try:
+        from sqlalchemy import text
+        from multi_agent.db.database import get_engine
+        engine = get_engine()
+        with engine.connect() as conn:
+            conn.execute(text("TRUNCATE TABLE chat_session"))
+            conn.commit()
+    except Exception:
+        pass
+
+
 # ── 멀티세션 관리 ────────────────────────────────────────────
 
 def _make_session() -> dict:
@@ -49,9 +118,14 @@ def _make_session() -> dict:
 
 
 if "sessions" not in st.session_state:
-    _first = _make_session()
-    st.session_state.sessions = [_first]
-    st.session_state.active_id = _first["id"]
+    _loaded = _db_load_sessions()
+    if _loaded:
+        st.session_state.sessions = _loaded
+        st.session_state.active_id = _loaded[0]["id"]
+    else:
+        _first = _make_session()
+        st.session_state.sessions = [_first]
+        st.session_state.active_id = _first["id"]
 
 
 def _active() -> dict:
@@ -161,9 +235,124 @@ def _color_by_amount(amount: float, min_val: float, max_val: float) -> list[int]
     return [r, 0, b, 80]
 
 
+_SGG_ALIASES = {
+    "미추홀구": "남구",  # 인천 미추홀구 (2018년 이전 이름 = 남구)
+}
+
+
+@st.cache_data(ttl=86400, show_spinner=False)
+def _load_geo_index() -> dict[str, list]:
+    """구 단위 GeoJSON → name: polygon 인덱스."""
+    import json
+    from pathlib import Path
+    geo_path = Path(__file__).parents[1] / "src" / "multi_agent" / "rag" / "sgg_boundaries.json"
+    index: dict[str, list] = {}
+    with open(geo_path, encoding="utf-8") as f:
+        geo = json.load(f)
+    for feat in geo["features"]:
+        name = feat["properties"]["name"]
+        geom = feat["geometry"]
+        if geom["type"] == "Polygon":
+            coords = geom["coordinates"][0]
+        elif geom["type"] == "MultiPolygon":
+            coords = max((ring for part in geom["coordinates"] for ring in part), key=len)
+        else:
+            continue
+        index[name] = coords
+    return index
+
+
+@st.cache_data(ttl=86400, show_spinner=False)
+def _load_dong_index() -> dict[str, list[dict]]:
+    """동 단위 GeoJSON → name: [{coords, cx, cy}] 인덱스 (동명 중복 허용)."""
+    import json
+    from pathlib import Path
+    geo_path = Path(__file__).parents[1] / "src" / "multi_agent" / "rag" / "dong_boundaries.json"
+    if not geo_path.exists():
+        return {}
+    index: dict[str, list] = {}
+    with open(geo_path, encoding="utf-8") as f:
+        geo = json.load(f)
+    for feat in geo["features"]:
+        name = feat["properties"]["name"]
+        geom = feat["geometry"]
+        if geom["type"] == "Polygon":
+            coords = geom["coordinates"][0]
+        elif geom["type"] == "MultiPolygon":
+            coords = max((ring for part in geom["coordinates"] for ring in part), key=len)
+        else:
+            continue
+        cx = sum(c[0] for c in coords) / len(coords)
+        cy = sum(c[1] for c in coords) / len(coords)
+        index.setdefault(name, []).append({"coords": coords, "cx": cx, "cy": cy})
+    return index
+
+
+@st.cache_data(ttl=86400, show_spinner=False)
+def _get_district_boundary(district_name: str, ref_lon: float = 127.0, ref_lat: float = 37.5) -> list | None:
+    """GeoJSON 인덱스에서 행정구역 실제 경계를 반환. 실패 시 ConvexHull 폴백."""
+    try:
+        lookup = _SGG_ALIASES.get(district_name, district_name)
+
+        # 동(洞) 단위 조회
+        if lookup.endswith("동"):
+            dong_idx = _load_dong_index()
+
+            import numpy as np
+            from scipy.spatial import ConvexHull
+
+            # 1. 정확히 일치 + 기준 좌표 0.1도 이내 (예: '압구정동')
+            candidates = dong_idx.get(lookup, [])
+            nearby = [c for c in candidates
+                      if abs(c["cx"] - ref_lon) < 0.1 and abs(c["cy"] - ref_lat) < 0.1]
+            if nearby:
+                best = min(nearby, key=lambda c: (c["cx"] - ref_lon)**2 + (c["cy"] - ref_lat)**2)
+                return best["coords"]
+
+            # 2. 법정동→행정동 접두어 매칭 (거리 필터 없이 전국 수집 → 클러스터링 → ref에 가장 가까운 클러스터)
+            prefix = lookup[:-1]
+            all_sub = [
+                e for name, entries in dong_idx.items()
+                if name.startswith(prefix) and name.endswith("동") and name != lookup
+                for e in entries
+            ]
+            if all_sub:
+                clusters: list[list] = []
+                for e in all_sub:
+                    placed = False
+                    for clust in clusters:
+                        cx = sum(x["cx"] for x in clust) / len(clust)
+                        cy = sum(x["cy"] for x in clust) / len(clust)
+                        if abs(e["cx"] - cx) < 0.15 and abs(e["cy"] - cy) < 0.15:
+                            clust.append(e)
+                            placed = True
+                            break
+                    if not placed:
+                        clusters.append([e])
+                best_clust = min(clusters, key=lambda c:
+                    min((e["cx"] - ref_lon)**2 + (e["cy"] - ref_lat)**2 for e in c))
+                all_pts = np.array([[c[0], c[1]] for e in best_clust for c in e["coords"]])
+                if len(all_pts) >= 3:
+                    hull = ConvexHull(all_pts)
+                    merged = all_pts[hull.vertices].tolist()
+                    merged.append(merged[0])
+                    return merged
+
+        # 구(區)/시(市) 단위 조회
+        sgg_idx = _load_geo_index()
+        if lookup in sgg_idx:
+            return sgg_idx[lookup]
+        for name, coords in sgg_idx.items():
+            if name.endswith(lookup):
+                return coords
+    except Exception:
+        pass
+    return _convex_hull_fallback(district_name)
+
+
 @st.cache_data(ttl=3600, show_spinner=False)
-def _get_district_hull(district_name: str) -> list | None:
-    """구/동 이름으로 ConvexHull 폴리곤 좌표를 반환 (DB 좌표 기반)."""
+def _convex_hull_fallback(district_name: str) -> list | None:
+    """DB 좌표로 ConvexHull 폴리곤을 계산 (SGIS 실패 시 폴백)."""
     try:
         import numpy as np
         from scipy.spatial import ConvexHull
@@ -227,11 +416,14 @@ def _render_map(points: list[dict], question: str = ""):
     layers = []
     _has_district_polygon = False
 
+    center_lat = sum(p["latitude"] for p in points) / len(points)
+    center_lon = sum(p["longitude"] for p in points) / len(points)
+
     # ── 구/동 영역 폴리곤 ─────────────────────────────────────
     if question:
         _district = _extract_district(question)
         if _district:
-            _hull = _get_district_hull(_district)
+            _hull = _get_district_boundary(_district, ref_lon=center_lon, ref_lat=center_lat)
             if _hull:
                 _has_district_polygon = True
                 layers.append(
@@ -372,9 +564,6 @@ def _render_map(points: list[dict], question: str = ""):
 
     if not layers:
         return
-
-    center_lat = sum(p["latitude"] for p in points) / len(points)
-    center_lon = sum(p["longitude"] for p in points) / len(points)
 
     # 포인트 수에 따라 줌 레벨 조정 (학교 마커가 많으면 더 넓게)
     if school_pts:
@@ -547,6 +736,7 @@ with st.sidebar:
     if st.button("🗑️  전체 초기화", use_container_width=True):
         for _s in st.session_state.sessions:
             httpx.delete(f"{API_BASE}/chat/{_s['thread_id']}", timeout=5.0)
+        _db_delete_all_sessions()
         _first = _make_session()
         st.session_state.sessions = [_first]
         st.session_state.active_id = _first["id"]
@@ -589,4 +779,6 @@ if user_input := st.chat_input("질문을 입력하세요 (예: 강남구 84㎡ 
             "question": user_input,
             "points": map_points,
         })
+
+    _db_save_session(_sess)
     st.rerun()

@@ -1,7 +1,8 @@
 from sqlalchemy import (
     Column, String, Float, Integer, Date, Boolean,
-    BigInteger, Index, Text
+    BigInteger, Index, Text, DateTime
 )
+from datetime import datetime, timezone
 from sqlalchemy.orm import DeclarativeBase
 
 
@@ -174,6 +175,20 @@ class BusStop(Base):
         Index("ix_bus_stop_city", "city"),
         Index("ix_bus_stop_loc", "latitude", "longitude"),
     )
+
+
+class ChatSession(Base):
+    """Streamlit 대화 세션 영속 저장"""
+    __tablename__ = "chat_session"
+
+    session_id = Column(String(36), primary_key=True)
+    thread_id = Column(String(36), nullable=False)
+    title = Column(String(200), default="새 대화")
+    messages_json = Column(Text, default="[]")
+    map_entries_json = Column(Text, default="[]")
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc),
+                        onupdate=lambda: datetime.now(timezone.utc))
 
 
 class CommercialArea(Base):

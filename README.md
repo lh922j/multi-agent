@@ -7,6 +7,12 @@
 
 ---
 
+## 화면
+
+![UI 스크린샷](docs/ui_chat.png)
+
+---
+
 ## 개요
 
 | 항목 | 내용 |
@@ -270,6 +276,52 @@ multi-agent/
 ├── docker-compose.yml
 ├── pyproject.toml
 └── .env.example
+```
+
+---
+
+## 배포
+
+### 라이브 서비스
+
+| 서비스 | URL |
+|--------|-----|
+| **Streamlit 앱** | http://54.88.155.235:8501 |
+| **FastAPI** | http://54.88.155.235:8000 |
+
+### 인프라
+
+- **서버**: AWS EC2 t3.small (Ubuntu 22.04)
+- **배포 방식**: Docker Compose (컨테이너 3개)
+
+```
+multi_agent_streamlit  — Streamlit UI       :8501
+multi_agent_fastapi    — FastAPI 백엔드      :8000
+multi_agent_postgres   — PostgreSQL 17       :5432 (내부)
+```
+
+### EC2 배포 절차
+
+```bash
+# 1. 파일 전송 (로컬 → EC2)
+scp -i <PEM_KEY> \
+  app/streamlit_app.py \
+  src/multi_agent/db/models.py \
+  src/multi_agent/rag/district_codes.json \
+  ubuntu@54.88.155.235:~/multi-agent/
+
+# 2. 컨테이너에 반영
+docker cp ~/multi-agent/streamlit_app.py multi_agent_streamlit:/app/app/streamlit_app.py
+docker cp ~/multi-agent/models.py        multi_agent_fastapi:/app/src/multi_agent/db/models.py
+docker cp ~/multi-agent/district_codes.json multi_agent_fastapi:/app/src/multi_agent/rag/district_codes.json
+docker cp ~/multi-agent/district_codes.json multi_agent_streamlit:/app/src/multi_agent/rag/district_codes.json
+
+# 3. DB 마이그레이션 (테이블 변경 시)
+docker compose exec -T fastapi python -c \
+  "from src.multi_agent.db.database import init_db; init_db()"
+
+# 4. 재시작
+docker compose restart streamlit
 ```
 
 ---

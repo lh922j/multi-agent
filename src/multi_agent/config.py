@@ -34,6 +34,10 @@ class Settings(BaseSettings):
     # Kakao
     kakao_api_key: str = ""
 
+    # SGIS 행정구역 경계 API
+    sgis_service_id: str = ""     # 서비스 ID (= consumer_key)
+    sgis_security_key: str = ""   # 보안 키 (= consumer_secret)
+
     # Langfuse
     langfuse_public_key: str = ""
     langfuse_secret_key: str = ""
