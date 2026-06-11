@@ -27,6 +27,7 @@ numpy>=1.26
 # API
 fastapi>=0.115.0
 uvicorn[standard]>=0.30.0
+sse-starlette>=1.6.5
 
 # 프론트엔드
 streamlit>=1.40.0
