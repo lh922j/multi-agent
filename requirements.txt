@@ -3,15 +3,8 @@ autogen-agentchat==0.4.9.3
 autogen-core==0.4.9.3
 autogen-ext[openai]==0.4.9.3
 
-# GraphRAG + Vector DB
-graphrag>=0.3.6
-pinecone-client>=3.0
-
 # OpenAI
 openai>=1.30
-
-# Anthropic (Claude)
-anthropic>=0.40
 
 # DB
 sqlalchemy>=2.0
