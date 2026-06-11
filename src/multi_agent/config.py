@@ -3,7 +3,10 @@ from pathlib import Path
 from loguru import logger
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-_PROJECT_ROOT = Path(__file__).parents[4]  # .../Project/
+try:
+    _PROJECT_ROOT = Path(__file__).parents[4]  # 로컬: .../Project/
+except IndexError:
+    _PROJECT_ROOT = Path(__file__).parents[2]  # Docker: /app
 _DEFAULT_SQLITE = str(_PROJECT_ROOT / "realestate" / "data" / "processed" / "realestate.db")
 _DEFAULT_MODEL = str(_PROJECT_ROOT / "realestate" / "data" / "models" / "price_model_trade_lgbm_complex.pkl")
 
@@ -41,7 +44,7 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
-_LOG_DIR = Path(__file__).parents[3] / "logs"
+_LOG_DIR = Path(__file__).parents[2] / "logs"
 _LOG_DIR.mkdir(exist_ok=True)
 
 logger.remove()
