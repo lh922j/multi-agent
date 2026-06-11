@@ -68,6 +68,8 @@ def _transform_rent(df: pd.DataFrame) -> pd.DataFrame:
         ).dt.date
     if "is_jeonse" not in df.columns and "monthly_rent" in df.columns:
         df["is_jeonse"] = df["monthly_rent"].fillna(0) == 0
+    if "is_jeonse" in df.columns:
+        df["is_jeonse"] = df["is_jeonse"].astype(bool)
     keep = [c for c in _RENT_COLS if c in df.columns]
     return df[keep]
 
