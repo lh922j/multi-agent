@@ -7,6 +7,7 @@
     python scripts/import_commercial_csv.py --file data/소상공인시장진흥공단_상가(상권)정보_20260331.csv
 """
 import argparse
+import unicodedata
 from pathlib import Path
 
 import pandas as pd
@@ -79,7 +80,7 @@ def main():
     if args.file:
         csv_files = [Path(args.file)]
     else:
-        csv_files = sorted(data_dir.glob("소상공인시장진흥공단_상가*.csv"))
+        csv_files = sorted(data_dir.glob("*202603*.csv"))
 
     if not csv_files:
         logger.error(f"CSV 파일 없음: {data_dir}")
