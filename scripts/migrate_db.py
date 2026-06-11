@@ -18,7 +18,7 @@ from multi_agent.config import settings
 from multi_agent.db.database import get_engine, init_db
 
 
-CHUNK_SIZE = 5_000
+CHUNK_SIZE = 1_000
 
 
 def _migrate_table(sqlite_conn: sqlite3.Connection, table: str, pg_table: str, transform=None):
