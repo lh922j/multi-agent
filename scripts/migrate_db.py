@@ -32,7 +32,7 @@ def _migrate_table(sqlite_conn: sqlite3.Connection, table: str, pg_table: str, t
             break
         if transform:
             df = transform(df)
-        df.to_sql(pg_table, engine, if_exists="append", index=False, method="multi")
+        df.to_sql(pg_table, engine, if_exists="append", index=False)
         total += len(df)
         offset += CHUNK_SIZE
         logger.info(f"  {pg_table}: {total:,}건 완료")
