@@ -79,7 +79,7 @@ def main():
     if args.file:
         csv_files = [Path(args.file)]
     else:
-        csv_files = sorted(data_dir.glob("*.csv"))
+        csv_files = sorted(data_dir.glob("소상공인시장진흥공단_상가*.csv"))
 
     if not csv_files:
         logger.error(f"CSV 파일 없음: {data_dir}")
