@@ -49,3 +49,6 @@ htmlcov/
 
 # DeepEval 캐시
 .deepeval/
+
+# 평가 결과 (로컬 보관)
+tests/eval/results/
