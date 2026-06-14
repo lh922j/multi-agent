@@ -118,14 +118,22 @@ async def evaluate_case(case: dict, mode: str) -> "SingleResult":
         result.error = answer
         return result
 
+    # TERMINATE 태그 제거 후 DeepEval에 전달
+    clean_answer = answer.replace("TERMINATE", "").strip()
+
+    # offscope 케이스: 의도적 거부 답변 → relevancy 측정 제외
+    is_offscope = case.get("expected_agent") == "OFFSCOPE"
+
     # 숫자 정확도 (reference에 수치가 있는 케이스)
     _NUM_TAGS = {"trade", "rent", "commercial", "prediction", "anomaly"}
     if case["reference"] and any(t in _NUM_TAGS for t in case.get("tags", [])):
-        result.numerical_accuracy = check_numerical_accuracy(answer, case["reference"])
+        result.numerical_accuracy = check_numerical_accuracy(clean_answer, case["reference"])
 
-    # LLM-as-a-Judge (DeepEval)
+    # LLM-as-a-Judge (DeepEval) — offscope는 건너뜀
+    if is_offscope:
+        return result
+
     context = [case["context"]] if case.get("context") else []
-    # 멀티턴 케이스: 전체 대화를 input_text로 구성해 평가 LLM이 맥락을 파악할 수 있게 함
     turns = case.get("turns")
     if turns and len(turns) > 1:
         eval_input = "[대화 맥락]\n" + "\n".join(f"사용자: {t}" for t in turns)
@@ -133,7 +141,7 @@ async def evaluate_case(case: dict, mode: str) -> "SingleResult":
         eval_input = case["input"]
     tc = make_deepeval_test_case(
         input_text=eval_input,
-        actual_output=answer,
+        actual_output=clean_answer,
         expected_output=case["reference"],
         retrieval_context=context,
     )
