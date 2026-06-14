@@ -199,7 +199,11 @@ def check_numerical_accuracy(answer: str, reference: str) -> float | None:
       - 억원  : "20억~30억" → [20, 30]
       - 만원  : "5,000만원" → [5000]
       - %     : "3~5% 상승" → [3, 5]
-      - 개/건 : "150개"     → [150]
+      - 개/건 : "300~600개" → [300, 600]  (범위 앞 숫자도 캡처)
+
+    시맨틱 처리:
+      - reference에 "이상" 포함 → 답변 값 ≥ ref_min이면 통과
+      - reference에 "이하" 포함 → 답변 값 ≤ ref_max이면 통과
     """
     import re
 
@@ -207,11 +211,14 @@ def check_numerical_accuracy(answer: str, reference: str) -> float | None:
         """억·만원을 '금액(만원)' 단위로 통일, %·건수는 별도."""
         result: dict[str, list[float]] = {}
         for m in re.findall(r"(\d+(?:\.\d+)?)\s*억", text):
-            result.setdefault("금액", []).append(float(m) * 10000)  # 만원 통일
+            result.setdefault("금액", []).append(float(m) * 10000)
         for m in re.findall(r"(\d[\d,]*)\s*만원", text):
             result.setdefault("금액", []).append(float(m.replace(",", "")))
         for m in re.findall(r"(\d+(?:\.\d+)?)\s*%", text):
             result.setdefault("%", []).append(float(m))
+        # "X개", "X~Y개" 둘 다 캡처 (범위의 앞 숫자 포함)
+        for m in re.findall(r"(\d[\d,]*)(?=~\d[\d,]*\s*(?:개|건|곳))", text):
+            result.setdefault("cnt", []).append(float(m.replace(",", "")))
         for m in re.findall(r"(\d[\d,]*)\s*(?:개|건|곳)", text):
             result.setdefault("cnt", []).append(float(m.replace(",", "")))
         return result
@@ -220,7 +227,10 @@ def check_numerical_accuracy(answer: str, reference: str) -> float | None:
     ans_items = _parse(answer)
 
     if not ref_items or not ans_items:
-        return None  # 수치 없는 케이스는 측정 불가
+        return None
+
+    has_ijang = "이상" in reference  # ≥ ref_min 이면 통과
+    has_iha = "이하" in reference    # ≤ ref_max 이면 통과
 
     for unit, ref_vals in ref_items.items():
         ans_vals = ans_items.get(unit, [])
@@ -228,6 +238,22 @@ def check_numerical_accuracy(answer: str, reference: str) -> float | None:
             continue
 
         ref_min, ref_max = min(ref_vals), max(ref_vals)
+
+        if has_ijang:
+            # "이상" → 답변이 기준값보다 크거나 같으면 통과 (10% 여유)
+            threshold = ref_min * 0.9
+            if any(v >= threshold for v in ans_vals):
+                return 1.0
+            continue
+
+        if has_iha:
+            # "이하" → 답변이 기준값보다 작거나 같으면 통과 (10% 여유)
+            threshold = ref_max * 1.1
+            if any(v <= threshold for v in ans_vals):
+                return 1.0
+            continue
+
+        # 일반 범위 비교
         if ref_min == ref_max:
             ref_min *= 0.8
             ref_max *= 1.2
@@ -236,8 +262,7 @@ def check_numerical_accuracy(answer: str, reference: str) -> float | None:
             ref_min -= margin
             ref_max += margin
 
-        for v in ans_vals:
-            if ref_min <= v <= ref_max:
-                return 1.0
+        if any(ref_min <= v <= ref_max for v in ans_vals):
+            return 1.0
 
     return 0.0

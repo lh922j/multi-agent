@@ -201,7 +201,7 @@
     "input": "강동구 전세 거래 최근 현황 알려줘",
     "expected_agent": "DataQueryAgent",
     "expected_map_points": true,
-    "reference": "강동구 84㎡ 전세 보증금 평균은 약 5억~9억 원 수준입니다.",
+    "reference": "강동구 전세 보증금 평균은 약 1억~4억 원 수준이며, 최저 0.1억에서 최고 4억원 거래가 이루어집니다.",
     "context": "강동구는 둔촌주공 재건축 완료로 신규 입주 물량이 증가하며 전세 시장이 변동 중이다.",
     "criteria": "강동구 전세 시세를 최근 동향과 함께 설명하는가",
     "tags": [
@@ -257,7 +257,7 @@
     "input": "강남구 음식점 현황 알려줘",
     "expected_agent": "DataQueryAgent",
     "expected_map_points": true,
-    "reference": "강남구 음식점은 약 10,000개 이상 영업 중이며 한식, 중식, 양식 순으로 분포합니다.",
+    "reference": "강남구 주요 동별 음식점은 역삼1동 약 2,000개 이상, 논현동·압구정동·신사동 각 약 800~1,200개 수준입니다.",
     "context": "강남구는 역삼동, 논현동, 청담동 중심으로 다양한 음식점이 밀집해 있으며 특히 역삼역·강남역 인근 상권이 활발하다.",
     "criteria": "강남구 음식점 수와 업종 분포를 구체적으로 설명하는가",
     "tags": [
@@ -314,7 +314,7 @@
     "input": "서초구 학원 몇 개야",
     "expected_agent": "DataQueryAgent",
     "expected_map_points": false,
-    "reference": "서초구 학원 수는 약 5,000개 이상입니다.",
+    "reference": "서초구 학원 수는 약 400~800개 수준입니다.",
     "context": "서초구 반포동·잠원동·방배동 일대에 학원이 밀집해 있으며, 특히 사교육 수요가 높다.",
     "criteria": "서초구 학원 수를 구체적으로 파악해 답변하는가",
     "tags": [
