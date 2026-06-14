@@ -46,3 +46,6 @@ logs/
 .pytest_cache/
 .coverage
 htmlcov/
+
+# DeepEval 캐시
+.deepeval/
