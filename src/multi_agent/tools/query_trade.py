@@ -72,8 +72,14 @@ def query_trade_data(
         if not text_rows:
             return f"'{district}' 지역에서 조건에 맞는 매매 거래가 없습니다."
 
+        amounts = [r.deal_amount for r in text_rows]
+        avg_eok = sum(amounts) / len(amounts) / 10000
+        min_eok = min(amounts) / 10000
+        max_eok = max(amounts) / 10000
+
         lines = [
             "[ 매매 실거래 ]",
+            f"▶ 평균 {avg_eok:.1f}억원 | 최저 {min_eok:.1f}억원 | 최고 {max_eok:.1f}억원 (조회 {len(amounts)}건)",
             f"{'아파트명':<20} {'동명':<10} {'면적':>6} {'층':>4} {'매매금액':>10} {'거래일':>12}",
             "-" * 78,
         ]

@@ -88,8 +88,14 @@ def query_rent_data(
             eok = val / 10000
             return f"{eok:.1f}억" if eok >= 1 else f"{int(val):,}만원"
 
+        deposits = [r.deposit for r in text_rows]
+        avg_eok = sum(deposits) / len(deposits) / 10000
+        min_eok = min(deposits) / 10000
+        max_eok = max(deposits) / 10000
+
         lines = [
             "[ 전세·월세 임대차 실거래 ]",
+            f"▶ 보증금 평균 {avg_eok:.1f}억원 | 최저 {min_eok:.1f}억원 | 최고 {max_eok:.1f}억원 (조회 {len(deposits)}건)",
             f"{'아파트명':<20} {'동명':<10} {'면적':>6} {'유형':>4} {'보증금':>10} {'월세':>8} {'거래일':>12}",
             "-" * 84,
         ]
