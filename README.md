@@ -64,7 +64,7 @@ LangGraph도 검토했으나, AutoGen Swarm을 선택한 이유는 **Handoff 패
                             │
                             ▼
 ┌─────────────────────────────────────────────────────────┐
-│           KeywordRouterAgent (하이브리드 라우터)            │
+│           OrchestratorAgent (하이브리드 라우터)            │
 │                                                         │
 │  1. 명시적 offscope 키워드 → 즉시 거부 (LLM 미호출)          │
 │  2. 도메인 키워드 매칭 → fast path Handoff                  │
@@ -87,7 +87,7 @@ DataQuery  Prediction   RAG      Anomaly   즉시 거부
 
 | 에이전트 | LLM | 담당 도구 | 처리 질문 예시 |
 |----------|-----|-----------|----------------|
-| **KeywordRouterAgent** | △ fallback 시만 | — | 모든 질문의 첫 관문 |
+| **OrchestratorAgent** | △ fallback 시만 | — | 모든 질문의 첫 관문 |
 | **DataQueryAgent** | GPT-4o-mini | `query_trade_data` `query_rent_data` `query_commercial_data` `query_nearby` | "역삼동 시세", "마포구 음식점" |
 | **PredictionAgent** | GPT-4o-mini | `predict_price` `get_station_coordinates` | "강남구 84㎡ 가격 예측" |
 | **RAGAgent** | GPT-4o-mini | `search_area_info` | "상계동 학군", "대치동 교통" |
@@ -311,7 +311,7 @@ multi-agent/
 │   └── migrate_db.py             # SQLite → PostgreSQL 마이그레이션
 ├── src/multi_agent/
 │   ├── agents/                   # 5개 에이전트 정의
-│   │   ├── router.py             # KeywordRouterAgent (규칙 기반)
+│   │   ├── router.py             # OrchestratorAgent (규칙 기반)
 │   │   ├── data_query.py
 │   │   ├── prediction.py
 │   │   ├── rag_agent.py
