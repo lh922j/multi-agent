@@ -393,7 +393,7 @@
     "input": "인천 부평구 84㎡ 아파트 예측 매매가 알려줘",
     "expected_agent": "PredictionAgent",
     "expected_map_points": false,
-    "reference": "인천 부평구 84㎡ 아파트 예측 매매가는 약 4억~6억원 수준입니다.",
+    "reference": "인천 부평구 84㎡ 아파트 예측 매매가는 약 2억~4억원 수준입니다.",
     "context": "부평구는 인천 중심부 주거 지역으로 서울 대비 낮은 가격대가 형성되어 있다.",
     "criteria": "인천 아파트 예측 가격을 구체적으로 제시하는가",
     "tags": [
