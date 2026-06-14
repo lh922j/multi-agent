@@ -55,7 +55,7 @@ LangGraph도 검토했으나, AutoGen Swarm을 선택한 이유는 **Handoff 패
 
 ## 에이전트 구조
 
-질문이 들어오면 규칙 기반 라우터가 유형을 분류하고, 담당 에이전트가 직접 최종 답변을 작성합니다. (ReportAgent 제거 — 응답 속도 34% 향상)
+질문이 들어오면 하이브리드 라우터가 유형을 분류하고, 담당 에이전트가 직접 최종 답변을 작성합니다. (ReportAgent 제거 — 응답 속도 34% 향상)
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -64,8 +64,11 @@ LangGraph도 검토했으나, AutoGen Swarm을 선택한 이유는 **Handoff 패
                             │
                             ▼
 ┌─────────────────────────────────────────────────────────┐
-│              KeywordRouterAgent (규칙 기반)               │
-│  LLM 없이 키워드만으로 라우팅 → 비용 절감 + 안정성 확보            │
+│           KeywordRouterAgent (하이브리드 라우터)            │
+│                                                         │
+│  1. 명시적 offscope 키워드 → 즉시 거부 (LLM 미호출)          │
+│  2. 도메인 키워드 매칭 → fast path Handoff                  │
+│  3. 키워드 미매칭 → GPT-4o-mini fallback으로 의도 분류        │
 └──┬──────────┬──────────┬──────────┬──────────┬──────────┘
    │          │          │          │          │
    ▼          ▼          ▼          ▼          ▼
@@ -84,7 +87,7 @@ DataQuery  Prediction   RAG      Anomaly   즉시 거부
 
 | 에이전트 | LLM | 담당 도구 | 처리 질문 예시 |
 |----------|-----|-----------|----------------|
-| **KeywordRouterAgent** | ✗ 규칙 기반 | — | 모든 질문의 첫 관문 |
+| **KeywordRouterAgent** | △ fallback 시만 | — | 모든 질문의 첫 관문 |
 | **DataQueryAgent** | GPT-4o-mini | `query_trade_data` `query_rent_data` `query_commercial_data` `query_nearby` | "역삼동 시세", "마포구 음식점" |
 | **PredictionAgent** | GPT-4o-mini | `predict_price` `get_station_coordinates` | "강남구 84㎡ 가격 예측" |
 | **RAGAgent** | GPT-4o-mini | `search_area_info` | "상계동 학군", "대치동 교통" |
