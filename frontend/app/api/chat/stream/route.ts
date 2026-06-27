@@ -5,7 +5,6 @@ const API_BASE = process.env.API_BASE ?? "http://98.84.101.118:8000";
 
 export async function POST(request: Request) {
   const body = await request.json();
-  console.log("[proxy] API_BASE =", API_BASE);
 
   let upstream: Response;
   try {
@@ -16,7 +15,7 @@ export async function POST(request: Request) {
     });
   } catch (e) {
     const errMsg = e instanceof Error ? e.message : String(e);
-    const msg = `data: ${JSON.stringify({ type: "done", answer: `연결 실패: ${errMsg} | API_BASE: ${API_BASE}`, map_points: [] })}\n\n`;
+    const msg = `data: ${JSON.stringify({ type: "done", answer: `서버에 연결할 수 없습니다. (${errMsg})`, map_points: [] })}\n\n`;
     return new Response(msg, {
       status: 200,
       headers: { "Content-Type": "text/event-stream" },
