@@ -52,3 +52,5 @@ htmlcov/
 
 # 평가 결과 (로컬 보관)
 tests/eval/results/
+.vercel
+.env*
