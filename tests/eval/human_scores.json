@@ -7,25 +7,105 @@
     "최소 15건 이상 입력해야 의미 있는 Pearson r을 얻을 수 있습니다."
   ],
   "scores": [
-    {"id": "trade-01",       "human_score": null, "note": ""},
-    {"id": "trade-03",       "human_score": null, "note": "한국어 테이블 형식 — relevancy 저평가 케이스"},
-    {"id": "trade-05",       "human_score": null, "note": ""},
-    {"id": "trade-07",       "human_score": null, "note": ""},
-    {"id": "trade-09",       "human_score": null, "note": ""},
-    {"id": "rent-01",        "human_score": null, "note": ""},
-    {"id": "rent-03",        "human_score": null, "note": ""},
-    {"id": "commercial-01",  "human_score": null, "note": ""},
-    {"id": "commercial-05",  "human_score": null, "note": "단답 질문 + 목록 답변 — relevancy 저평가 케이스"},
-    {"id": "commercial-06",  "human_score": null, "note": "역명 기반 검색 케이스"},
-    {"id": "commercial-07",  "human_score": null, "note": ""},
-    {"id": "prediction-01",  "human_score": null, "note": ""},
-    {"id": "prediction-03",  "human_score": null, "note": ""},
-    {"id": "anomaly-01",     "human_score": null, "note": ""},
-    {"id": "anomaly-04",     "human_score": null, "note": "DB 0건 → 분석 불가 케이스"},
-    {"id": "anomaly-06",     "human_score": null, "note": ""},
-    {"id": "rag-01",         "human_score": null, "note": "번호 목록 형식 — relevancy 저평가 케이스"},
-    {"id": "rag-02",         "human_score": null, "note": ""},
-    {"id": "rag-05",         "human_score": null, "note": ""},
-    {"id": "multiturn-01",   "human_score": null, "note": ""}
+    {
+      "id": "trade-01",
+      "human_score": 0.9,
+      "note": "평균·최저·최고 + 단지별 거래 테이블 포함. criteria 충족."
+    },
+    {
+      "id": "trade-03",
+      "human_score": 0.9,
+      "note": "동명·면적·보증금·거래일 포함. 거리 수치 없으나 1km 내라고 명시."
+    },
+    {
+      "id": "trade-05",
+      "human_score": 0.9,
+      "note": "서울 평균 12.4억 + 구별 테이블(서초 25.9억~도봉 6.2억). 편차 설명 충분."
+    },
+    {
+      "id": "trade-07",
+      "human_score": 0.95,
+      "note": "평균 31.7억 + 리센츠·잠실엘스 등 단지명 포함. 수치·단지명 criteria 완전 충족."
+    },
+    {
+      "id": "trade-09",
+      "human_score": 0.75,
+      "note": "매매가 수치는 구체적이나 criteria에서 요구한 '지역 특성' 설명이 없음."
+    },
+    {
+      "id": "rent-01",
+      "human_score": 0.9,
+      "note": "평균 7.9억·최저 6.1억·최고 12.0억 + 거래 테이블. 보증금 수치 criteria 충족."
+    },
+    {
+      "id": "rent-03",
+      "human_score": 0.85,
+      "note": "보증금·월세금 둘 다 테이블에 포함. 월세금 컬럼이 일부 비어 있는 행 있음."
+    },
+    {
+      "id": "commercial-01",
+      "human_score": 0.9,
+      "note": "음식 2633개·과학기술 1783개 등 업종별 수치 명확."
+    },
+    {
+      "id": "commercial-05",
+      "human_score": 1.0,
+      "note": "401개로 정확한 수치 제시. 단답 질문에 딱 맞는 답변."
+    },
+    {
+      "id": "commercial-06",
+      "human_score": 0.85,
+      "note": "약 604개 + 거리 포함 테이블. '약'이라는 불확실성이 있으나 수치 제시 기준 충족."
+    },
+    {
+      "id": "commercial-07",
+      "human_score": 0.9,
+      "note": "종로구 한식 2570개 + 주요 식당 목록. criteria 충족."
+    },
+    {
+      "id": "prediction-01",
+      "human_score": 0.95,
+      "note": "28.21억이라는 구체적 수치 + LightGBM 불확실성 명시. 완전 충족."
+    },
+    {
+      "id": "prediction-03",
+      "human_score": 0.85,
+      "note": "16.02억 + '개발·인프라 확장으로 인기 상승' 지역 특성 언급. 근거는 다소 일반적."
+    },
+    {
+      "id": "anomaly-01",
+      "human_score": 0.95,
+      "note": "19392건 중 388건(2.0%) + 압구정동 위주 + 한양1차 540,000만원 사례. 충분히 구체적."
+    },
+    {
+      "id": "anomaly-04",
+      "human_score": 0.9,
+      "note": "4110건 중 83건(2.0%) + 아시아선수촌 사례. 구체적 설명 충족."
+    },
+    {
+      "id": "anomaly-06",
+      "human_score": 1.0,
+      "note": "서계동 100%·궁동 81.8% 등 상위 10곳 지역명+비율 명확히 복수 제시."
+    },
+    {
+      "id": "rag-01",
+      "human_score": 0.95,
+      "note": "마포구 14.6억 언급 + 5곳(광진·성동·종로·동작·양천) + 각 가격. criteria 완전 충족."
+    },
+    {
+      "id": "rag-02",
+      "human_score": 0.85,
+      "note": "입시·보습 학원 56% + 서울과학고·대치중 등 구체적 정보. 신뢰도 충분."
+    },
+    {
+      "id": "rag-05",
+      "human_score": 0.9,
+      "note": "강남(재개발 37구역·학군 56%) vs 용산(8구역) 다각도 비교. 공정한 설명."
+    },
+    {
+      "id": "multiturn-01",
+      "human_score": 0.95,
+      "note": "강남구 맥락 정확히 파악 + 평균 4.7억·최저 0.1억·최고 12.0억 + 거래 테이블."
+    }
   ]
 }
