@@ -120,9 +120,11 @@ def main():
             dtype=str,
         ):
             df = _clean_df(chunk)
-            df.to_sql("commercial_store", engine, if_exists="append", index=False, method="multi")
+            df.to_sql("commercial_store", engine, if_exists="append", index=False)
             file_total += len(df)
             total += len(df)
+            if file_total % 100_000 == 0 or file_total == len(df):
+                logger.info(f"  진행: {file_total:,}건")
         logger.info(f"  → {file_total:,}건 완료")
 
     logger.success(f"상가 데이터 임포트 완료: 총 {total:,}건")
