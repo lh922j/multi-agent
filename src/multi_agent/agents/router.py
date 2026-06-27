@@ -39,13 +39,16 @@ def _route(message: str) -> str:
     Returns:
         에이전트 이름 | "OFFSCOPE" | "FALLBACK"
     """
-    if _OFFSCOPE_PATTERNS.search(message):
-        return "OFFSCOPE"
-
+    # 도메인 키워드를 먼저 체크 — "날씨 좋은 남향 아파트 시세"처럼
+    # offscope 단어가 섞여도 부동산 의도면 도메인 에이전트로 라우팅
     msg_lower = message.lower()
     for patterns, target in _RULES:
         if any(p.lower() in msg_lower for p in patterns):
             return target
+
+    # 도메인 키워드가 없을 때만 offscope 판정
+    if _OFFSCOPE_PATTERNS.search(message):
+        return "OFFSCOPE"
 
     return "FALLBACK"
 
