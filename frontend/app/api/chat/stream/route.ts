@@ -1,9 +1,8 @@
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const API_BASE = process.env.API_BASE ?? "http://98.84.101.118:8000";
-
 export async function POST(request: Request) {
+  const API_BASE = process.env.API_BASE!;
   const body = await request.json();
 
   let upstream: Response;
