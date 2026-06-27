@@ -10,6 +10,7 @@ from loguru import logger
 from ..config import settings
 
 _MODEL_PATH = settings.model_path
+_RENT_MODEL_PATH = settings.rent_model_path
 _WORKER = str(Path(__file__).parent / "_predict_subprocess.py")
 _RAG_DIR = Path(__file__).parents[1] / "rag"
 
@@ -109,4 +110,68 @@ def predict_price(
         )
     except Exception as e:
         logger.error(f"[predict] 오류: {e}")
+        return f"예측 오류: {e}"
+
+
+def predict_rent_price(
+    area_exclusive: float,
+    floor: int,
+    build_year: int,
+    district_code: str,
+    latitude: float,
+    longitude: float,
+    deal_year: int = 2025,
+    deal_month: int = 1,
+) -> str:
+    """
+    학습된 LightGBM 모델로 아파트 전세 보증금 예상 가격을 예측합니다.
+
+    Args:
+        area_exclusive: 전용면적 (㎡), 예: 66.0
+        floor: 층수, 예: 10
+        build_year: 건축연도, 예: 2010
+        district_code: 시군구 코드 5자리, 예: '11440' (마포구)
+        latitude: 위도
+        longitude: 경도
+        deal_year: 거래 연도 (기본 2025)
+        deal_month: 거래 월 (기본 1)
+    """
+    gangnam_lat, gangnam_lon = 37.4979, 127.0276
+    geo_sgg_code = _LAWD_TO_GEO.get(str(district_code), "unknown")
+    season_map = {12: 0, 1: 0, 2: 0, 3: 1, 4: 1, 5: 1, 6: 2, 7: 2, 8: 2, 9: 3, 10: 3, 11: 3}
+
+    row = {
+        "area_exclusive": area_exclusive,
+        "floor": floor,
+        "building_age": 2025 - build_year,
+        "deal_year": deal_year,
+        "deal_month": deal_month,
+        "deal_season": season_map[deal_month],
+        "latitude": latitude,
+        "longitude": longitude,
+        "dist_to_gangnam_km": _haversine(latitude, longitude, gangnam_lat, gangnam_lon),
+        "dist_to_subway_km": round(_min_dist_km(latitude, longitude, _SUBWAY_COORDS), 3),
+        "dist_to_cityhall_km": round(_min_dist_km(latitude, longitude, _OFFICE_COORDS), 3),
+        "sgg_code": geo_sgg_code,
+    }
+
+    logger.info(f"[predict_rent] area={area_exclusive}㎡ floor={floor} sgg={district_code}")
+    try:
+        log_pred = subprocess.run(
+            [sys.executable, _WORKER, _RENT_MODEL_PATH],
+            input=json.dumps(row),
+            capture_output=True,
+            text=True,
+            timeout=30,
+            env={**__import__("os").environ, "OMP_NUM_THREADS": "1", "OPENBLAS_NUM_THREADS": "1", "MKL_NUM_THREADS": "1"},
+        )
+        if log_pred.returncode != 0:
+            raise RuntimeError(log_pred.stderr.strip())
+        predicted = int(np.expm1(float(log_pred.stdout.strip())))
+        return (
+            f"예측 전세 보증금: {predicted:,}만원 ({predicted / 10000:.2f}억원)\n"
+            f"입력 조건: {area_exclusive}㎡ / {floor}층 / {build_year}년 준공 / {district_code}"
+        )
+    except Exception as e:
+        logger.error(f"[predict_rent] 오류: {e}")
         return f"예측 오류: {e}"

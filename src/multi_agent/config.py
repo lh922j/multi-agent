@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     # 기존 realestate/ 자산
     sqlite_db_path: str = _DEFAULT_SQLITE
     model_path: str = _DEFAULT_MODEL
+    rent_model_path: str = str(Path(_DEFAULT_MODEL).parent / "price_model_rent_lgbm_complex.pkl")
 
     # Cohere (Re-ranking)
     cohere_api_key: str = ""
