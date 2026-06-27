@@ -2,8 +2,6 @@
 import { useState, useCallback, useRef } from "react";
 import { Message, Session, SSEEvent, MapPoint } from "@/types";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8000";
-
 function makeId() {
   return Math.random().toString(36).slice(2, 10);
 }
@@ -64,7 +62,7 @@ export function useChat() {
       abortRef.current = new AbortController();
 
       try {
-        const resp = await fetch(`${API_BASE}/chat/stream`, {
+        const resp = await fetch(`/api/chat/stream`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ message: text, thread_id: sessionId }),
@@ -78,6 +76,7 @@ export function useChat() {
         let mapPoints: MapPoint[] = [];
         let agentName = "";
 
+        let receivedDone = false;
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
@@ -113,8 +112,13 @@ export function useChat() {
               } else if (ev.type === "done") {
                 if (ev.answer) fullText = ev.answer;
                 if (ev.map_points) mapPoints = ev.map_points;
+                receivedDone = true;
               }
             } catch {}
+          }
+          if (receivedDone) {
+            reader.cancel();
+            break;
           }
         }
 
