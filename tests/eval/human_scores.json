@@ -1,0 +1,31 @@
+{
+  "_instructions": [
+    "GEval criteria 타당성 검증용 인간 레이블.",
+    "각 케이스 id에 해당하는 실제 시스템 응답을 직접 확인한 뒤 human_score(0.0~1.0)를 입력하세요.",
+    "0.0=전혀 부적절, 0.5=보통, 1.0=완전히 적절.",
+    "null은 미평가 상태(상관관계 계산 시 제외됨).",
+    "최소 15건 이상 입력해야 의미 있는 Pearson r을 얻을 수 있습니다."
+  ],
+  "scores": [
+    {"id": "trade-01",       "human_score": null, "note": ""},
+    {"id": "trade-03",       "human_score": null, "note": "한국어 테이블 형식 — relevancy 저평가 케이스"},
+    {"id": "trade-05",       "human_score": null, "note": ""},
+    {"id": "trade-07",       "human_score": null, "note": ""},
+    {"id": "trade-09",       "human_score": null, "note": ""},
+    {"id": "rent-01",        "human_score": null, "note": ""},
+    {"id": "rent-03",        "human_score": null, "note": ""},
+    {"id": "commercial-01",  "human_score": null, "note": ""},
+    {"id": "commercial-05",  "human_score": null, "note": "단답 질문 + 목록 답변 — relevancy 저평가 케이스"},
+    {"id": "commercial-06",  "human_score": null, "note": "역명 기반 검색 케이스"},
+    {"id": "commercial-07",  "human_score": null, "note": ""},
+    {"id": "prediction-01",  "human_score": null, "note": ""},
+    {"id": "prediction-03",  "human_score": null, "note": ""},
+    {"id": "anomaly-01",     "human_score": null, "note": ""},
+    {"id": "anomaly-04",     "human_score": null, "note": "DB 0건 → 분석 불가 케이스"},
+    {"id": "anomaly-06",     "human_score": null, "note": ""},
+    {"id": "rag-01",         "human_score": null, "note": "번호 목록 형식 — relevancy 저평가 케이스"},
+    {"id": "rag-02",         "human_score": null, "note": ""},
+    {"id": "rag-05",         "human_score": null, "note": ""},
+    {"id": "multiturn-01",   "human_score": null, "note": ""}
+  ]
+}
