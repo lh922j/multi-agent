@@ -23,7 +23,8 @@
 | Vector RAG | ChromaDB + Cohere Re-ranking (`rerank-multilingual-v3.0`) |
 | DB | PostgreSQL 17 (Docker) |
 | 모니터링 | Langfuse (에이전트별 실행 흐름 추적) |
-| 프론트엔드 | Streamlit + pydeck (지도 시각화) |
+| 프론트엔드 | Next.js 15 (App Router) + Kakao Maps API · **Vercel 배포** |
+| 백엔드 배포 | AWS EC2 (Docker Compose) + Cloudflare Tunnel (HTTPS 프록시) |
 | 평균 응답 시간 | **5.66초** (GEval 0.875 / 라우팅 100%) |
 
 ---
@@ -79,8 +80,8 @@ DataQuery  Prediction   RAG      Anomaly   즉시 거부
    └──────────┴──────────┴──────────┘          │
                      │                         │
                      ▼                         ▼
-           Streamlit UI 출력            "서비스 범위 외"
-         (텍스트 답변 + pydeck 지도)       0.2s 응답
+        Next.js UI (Vercel)              "서비스 범위 외"
+      (채팅 + Kakao Maps 지도)             0.2s 응답
 ```
 
 ### 에이전트별 역할
@@ -88,10 +89,10 @@ DataQuery  Prediction   RAG      Anomaly   즉시 거부
 | 에이전트 | LLM | 담당 도구 | 처리 질문 예시 |
 |----------|-----|-----------|----------------|
 | **OrchestratorAgent** | △ fallback 시만 | — | 모든 질문의 첫 관문 |
-| **DataQueryAgent** | GPT-4o-mini | `query_trade_data` `query_rent_data` `query_commercial_data` `query_nearby` | "역삼동 시세", "마포구 음식점" |
+| **DataQueryAgent** | GPT-4o-mini | `query_trade_data` `query_rent_data` `query_trade_nearby` `query_rent_nearby` `query_commercial_data` `query_district_avg_price` | "역삼동 시세", "마포구 음식점" |
 | **PredictionAgent** | GPT-4o-mini | `predict_price` `get_station_coordinates` | "강남구 84㎡ 가격 예측" |
-| **RAGAgent** | GPT-4o-mini | `search_area_info` | "상계동 학군", "대치동 교통" |
-| **AnomalyAgent** | GPT-4o-mini | `detect_anomaly` | "강남구 이상거래 탐지" |
+| **RAGAgent** | GPT-4o-mini | `search_area_info` → fallback `search_web` (Tavily) | "상계동 학군", "GTX 개통 일정", "대치동 재건축" |
+| **AnomalyAgent** | GPT-4o-mini | `detect_anomaly` `query_direct_trade_ratio` | "강남구 이상거래 탐지" |
 
 ---
 
