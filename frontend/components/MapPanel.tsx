@@ -141,7 +141,6 @@ export default function MapPanel({ messages }: Props) {
       setMapError("스크립트 로드 실패 — API 키 또는 등록 도메인을 확인하세요.");
     };
     document.head.appendChild(s);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ── 마커 업데이트 ──────────────────────────────────────────
