@@ -25,6 +25,7 @@ from .config import settings
 # 세션별 히스토리
 _HISTORY: dict[str, list] = {}
 
+
 _MAP_RE = re.compile(r"§MAP§(.+?)§END§", re.DOTALL)
 
 # 에이전트 이름 → 한국어 표시
@@ -148,7 +149,7 @@ async def stream_chat(
     # AnomalyAgent: 도구가 §MAP§를 반환하지 않지만 위치 마커가 필요 → fallback 항상 적용
     # DataQueryAgent: 도구가 §MAP§를 반환한 경우(개별 거래)만 fallback 적용
     #                 집계/카운트 쿼리는 §MAP§ 없음 → fallback 미적용
-    _LOC_FALLBACK_ALWAYS = {"AnomalyAgent"}
+    _LOC_FALLBACK_ALWAYS = {"AnomalyAgent", "RAGAgent"}
     _LOC_FALLBACK_IF_SAW_MAP = {"DataQueryAgent"}
     _SKIP_AGENTS = {"OrchestratorAgent"}
 

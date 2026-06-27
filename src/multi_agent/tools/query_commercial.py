@@ -30,6 +30,110 @@ _CATEGORY_ALIAS: dict[str, str] = {
 _SMALL_CATEGORY_KEYWORDS: set[str] = {"편의점", "카페", "치킨", "버거", "피자"}
 
 
+def _commercial_nearby_fallback(
+    conn,
+    place_name: str,
+    latitude: float,
+    longitude: float,
+    radius_km: float,
+    store_cat_filter: str,
+    params: dict,
+    category: str,
+) -> str:
+    """좌표 기반 반경 검색 — district_sql_filter 미적중 시 폴백."""
+    from .query_nearby import _bbox, _haversine_km
+
+    lat_min, lat_max, lon_min, lon_max = _bbox(latitude, longitude, radius_km)
+
+    nearby_params: dict = {
+        "lat_min": lat_min, "lat_max": lat_max,
+        "lon_min": lon_min, "lon_max": lon_max,
+        "top_n": params.get("top_n", 10),
+    }
+    if "cat_pat" in params:
+        nearby_params["cat_pat"] = params["cat_pat"]
+
+    total_sql = text(f"""
+        SELECT COUNT(*) FROM commercial_store
+        WHERE is_active = true
+          AND latitude BETWEEN :lat_min AND :lat_max
+          AND longitude BETWEEN :lon_min AND :lon_max
+          {store_cat_filter}
+    """)
+    total_raw = conn.execute(total_sql, nearby_params).scalar() or 0
+
+    if total_raw == 0:
+        hint = f" (업종 키워드: '{category}')" if category.strip() else ""
+        return f"'{place_name}' 근처 1km 내 상권 데이터가 없습니다{hint}."
+
+    group_sql = text(f"""
+        SELECT mid_category, COUNT(*) AS cnt,
+               AVG(latitude) AS lat, AVG(longitude) AS lon
+        FROM commercial_store
+        WHERE is_active = true
+          AND latitude BETWEEN :lat_min AND :lat_max
+          AND longitude BETWEEN :lon_min AND :lon_max
+          {store_cat_filter}
+        GROUP BY mid_category
+        ORDER BY cnt DESC
+        LIMIT :top_n
+    """)
+    group_rows = conn.execute(group_sql, nearby_params).fetchall()
+
+    store_sql = text(f"""
+        SELECT store_name, mid_category, dong_name, latitude, longitude
+        FROM commercial_store
+        WHERE is_active = true
+          AND latitude BETWEEN :lat_min AND :lat_max
+          AND longitude BETWEEN :lon_min AND :lon_max
+          {store_cat_filter}
+          AND latitude IS NOT NULL AND longitude IS NOT NULL
+        ORDER BY RANDOM()
+        LIMIT 10
+    """)
+    store_rows = conn.execute(store_sql, nearby_params).fetchall()
+    store_rows = [
+        r for r in store_rows
+        if _haversine_km(latitude, longitude, r.latitude, r.longitude) <= radius_km
+    ]
+
+    cat_label = f" — {category}" if category.strip() else ""
+    lines = [
+        f"[ 상권 현황{cat_label} — {place_name} 반경 {radius_km}km ]",
+        f"총 영업 중 점포: 약 {total_raw:,}개",
+        "",
+        f"{'업종(중분류)':<20} {'점포 수':>8}",
+        "-" * 30,
+    ]
+    for r in group_rows:
+        lines.append(f"{(r.mid_category or '미분류'):<20} {r.cnt:>8,}개")
+
+    if store_rows:
+        lines += ["", "[ 주요 점포 ]"]
+        for r in store_rows:
+            dist = _haversine_km(latitude, longitude, r.latitude, r.longitude)
+            lines.append(f"  - {r.store_name} ({r.dong_name}, {dist:.2f}km)")
+
+    text_result = "\n".join(lines)
+    map_points = [
+        {
+            "apt_name": r.store_name,
+            "dong_name": r.dong_name,
+            "area_exclusive": 0,
+            "deal_amount": 0,
+            "latitude": r.latitude,
+            "longitude": r.longitude,
+            "type": "commercial",
+            "category": r.mid_category or "",
+        }
+        for r in store_rows
+    ]
+    if map_points:
+        payload = json.dumps({"map_points": map_points, "text": text_result}, ensure_ascii=False)
+        return f"§MAP§{payload}§END§"
+    return text_result
+
+
 def query_commercial_data(
     district: str,
     category: str = "",
@@ -112,6 +216,17 @@ def query_commercial_data(
                 total = conn.execute(total_sql, params).scalar() or 0
 
                 if total == 0:
+                    # 지역명이 아닌 경우(역명·랜드마크 등) → 좌표 기반 1km 근처 검색
+                    from .query_nearby import _geocode, _bbox, _haversine_km
+                    coords = _geocode(district)
+                    if coords:
+                        return _commercial_nearby_fallback(
+                            conn, district, coords[0], coords[1],
+                            radius_km=1.0,
+                            store_cat_filter=store_cat_filter,
+                            params=params,
+                            category=category,
+                        )
                     hint = f" (업종 키워드: '{category}')" if category.strip() else ""
                     return f"'{district}' 지역의 상권 데이터가 없습니다{hint}."
 

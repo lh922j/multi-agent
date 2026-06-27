@@ -1,0 +1,41 @@
+@import "tailwindcss";
+
+:root {
+  --sidebar-bg: #111827;
+  --primary: #2563EB;
+  --bg: #F8FAFC;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+/* SSE 스트리밍 커서 */
+.streaming::after {
+  content: "▋";
+  animation: blink 0.8s step-end infinite;
+  color: #2563EB;
+  margin-left: 2px;
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+/* 스크롤바 */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 2px; }
+
+/* 데이터 테이블 */
+.data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.data-table th { background: #eef2ff; color: #4b5563; font-weight: 600; padding: 8px 10px; text-align: left; }
+.data-table td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; color: #1e293b; }
+.data-table tr:last-child td { border-bottom: none; }

@@ -38,6 +38,9 @@ class Settings(BaseSettings):
     sgis_service_id: str = ""     # 서비스 ID (= consumer_key)
     sgis_security_key: str = ""   # 보안 키 (= consumer_secret)
 
+    # Tavily Search (최신 뉴스·정책 웹 검색)
+    tavily_api_key: str = ""
+
     # Langfuse
     langfuse_public_key: str = ""
     langfuse_secret_key: str = ""

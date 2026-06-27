@@ -1,4 +1,5 @@
 import json
+import re
 from functools import lru_cache
 from pathlib import Path
 
@@ -37,6 +38,11 @@ def get_sgg_codes(district: str) -> list[str]:
 
 def district_sql_filter(district: str, dong_col: str = "dong_name", sgg_col: str = "sgg_code") -> tuple[str, dict]:
     d = district.strip()
+
+    # "송파구 잠실동", "강남구 역삼동" 형태 → 동명만 추출해 검색
+    m = re.match(r'^.+[구군시]\s+(.+동)$', d)
+    if m:
+        d = m.group(1)
 
     # 비공식 지명 별칭 우선 적용 (예: "홍대" → "서교동")
     d = _DONG_ALIASES.get(d, d)

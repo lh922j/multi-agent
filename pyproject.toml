@@ -13,9 +13,12 @@ dependencies = [
     "autogen-core==0.4.9.3",
     "autogen-ext[openai]==0.4.9.3",
 
-    # GraphRAG + Vector DB
-    "graphrag>=0.3.6",
-    "pinecone-client>=3.0",
+    # Vector DB + Hybrid RAG
+    "chromadb>=0.5",
+    "rank-bm25>=0.2",
+    "flashrank>=0.2",
+    "kiwipiepy>=0.18",
+    "tavily-python>=0.3",
 
     # OpenAI (LLM + embeddings)
     "openai>=1.30",

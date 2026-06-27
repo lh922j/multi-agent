@@ -1,11 +1,12 @@
 """
-rag/docs/*.txt → ChromaDB 벡터 인덱스 구축
+rag/docs/*.txt → 섹션 청킹 → ChromaDB 벡터 인덱스 구축
 
 실행:
     python scripts/build_vector_index.py
     python scripts/build_vector_index.py --reset   # 기존 인덱스 삭제 후 재구축
 """
 import argparse
+import re
 import sys
 from pathlib import Path
 
@@ -18,6 +19,45 @@ CHROMA_DIR = Path(__file__).parents[1] / "data" / "chroma"
 COLLECTION_NAME = "realestate_areas"
 
 
+def chunk_by_section(content: str, doc_id: str) -> list[tuple[str, str, dict]]:
+    """## 헤더 기준 섹션 분리 청킹."""
+    h1_match = re.search(r'^# (.+)$', content, re.MULTILINE)
+    doc_title = h1_match.group(1).strip() if h1_match else doc_id
+
+    sections = re.split(r'\n(?=## )', content)
+    chunks = []
+
+    for section in sections:
+        section = section.strip()
+        if not section or len(section) < 20:
+            continue
+
+        first_line = section.split('\n')[0]
+
+        if first_line.startswith('## '):
+            section_name = first_line.replace('## ', '').strip()
+            full_text = f"[{doc_title}]\n{section}"
+        elif first_line.startswith('# '):
+            # H1만 있고 ## 없는 첫 블록은 건너뜀 (제목줄만인 경우)
+            remaining = '\n'.join(section.split('\n')[1:]).strip()
+            if not remaining:
+                continue
+            section_name = first_line.replace('# ', '').strip()
+            full_text = section
+        else:
+            section_name = "기타"
+            full_text = section
+
+        chunk_id = f"{doc_id}__{section_name}"
+        chunks.append((chunk_id, full_text, {
+            "dong_name": doc_id,
+            "section": section_name,
+            "source": "csv_aggregation",
+        }))
+
+    return chunks
+
+
 def build_index(reset: bool = False) -> None:
     import chromadb
     from chromadb.utils.embedding_functions import OpenAIEmbeddingFunction
@@ -28,7 +68,7 @@ def build_index(reset: bool = False) -> None:
         logger.error(f"txt 파일 없음: {INPUT_DIR}")
         return
 
-    logger.info(f"문서 수: {len(txt_files)}개")
+    logger.info(f"문서 파일 수: {len(txt_files)}개")
 
     client = chromadb.PersistentClient(path=str(CHROMA_DIR))
     embed_fn = OpenAIEmbeddingFunction(
@@ -50,25 +90,30 @@ def build_index(reset: bool = False) -> None:
     )
 
     existing_ids = set(collection.get()["ids"])
-    logger.info(f"기존 문서 수: {len(existing_ids)}개")
+    logger.info(f"기존 청크 수: {len(existing_ids)}개")
 
     ids, docs, metas = [], [], []
+
     for f in txt_files:
-        doc_id = f.stem  # 파일명 = 동 이름
-        if doc_id in existing_ids and not reset:
-            continue
+        doc_id = f.stem
         content = f.read_text(encoding="utf-8")
         if not content.strip():
             continue
-        ids.append(doc_id)
-        docs.append(content)
-        metas.append({"dong_name": doc_id, "source": "db_aggregation"})
+
+        chunks = chunk_by_section(content, doc_id)
+        for chunk_id, chunk_text, meta in chunks:
+            if chunk_id in existing_ids and not reset:
+                continue
+            ids.append(chunk_id)
+            docs.append(chunk_text)
+            metas.append(meta)
 
     if not ids:
-        logger.info("추가할 신규 문서 없음")
+        logger.info("추가할 신규 청크 없음")
         return
 
-    # 배치 임베딩 (100개씩)
+    logger.info(f"신규 청크 수: {len(ids)}개")
+
     batch = 100
     for i in range(0, len(ids), batch):
         collection.upsert(
@@ -79,8 +124,7 @@ def build_index(reset: bool = False) -> None:
         logger.info(f"임베딩 진행: {min(i+batch, len(ids))}/{len(ids)}")
 
     total = collection.count()
-    logger.info(f"완료 — 컬렉션 총 {total}개 문서")
-    logger.info(f"경로: {CHROMA_DIR}")
+    logger.info(f"완료 — 컬렉션 총 {total}개 청크")
 
 
 def main():

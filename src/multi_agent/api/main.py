@@ -8,7 +8,7 @@ from sse_starlette.sse import EventSourceResponse
 
 from ..team import stream_chat, run_chat, clear_history
 from ..db.database import check_connection, init_db
-from ..tools.rag import _get_collection
+from ..tools.rag import _get_collection, _get_bm25, _get_ranker
 
 
 @asynccontextmanager
@@ -20,9 +20,11 @@ async def lifespan(app: FastAPI):
         logger.warning("PostgreSQL 연결 실패 — DB 쿼리가 동작하지 않을 수 있습니다")
     try:
         _get_collection()
-        logger.info("ChromaDB 워밍업 완료")
+        _get_bm25()
+        _get_ranker()
+        logger.info("ChromaDB · BM25 · FlashRank 워밍업 완료")
     except Exception as e:
-        logger.warning(f"ChromaDB 워밍업 실패: {e}")
+        logger.warning(f"RAG 워밍업 실패: {e}")
     logger.info("AutoGen Swarm 준비 완료")
     yield
     logger.info("서버 종료")

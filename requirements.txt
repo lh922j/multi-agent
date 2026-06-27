@@ -6,6 +6,13 @@ autogen-ext[openai]==0.4.9.3
 # OpenAI
 openai>=1.30
 
+# Vector DB + Hybrid RAG
+chromadb>=0.5
+rank-bm25>=0.2
+flashrank>=0.2
+kiwipiepy>=0.18
+tavily-python>=0.3
+
 # DB
 sqlalchemy>=2.0
 psycopg2-binary>=2.9
