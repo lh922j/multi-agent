@@ -344,7 +344,7 @@ GEval(사람 기준 종합 평가) 기준으로는 같은 케이스들이 모두
 
 - Python 3.11+
 - Docker Desktop (PostgreSQL 실행용)
-- API 키: OpenAI, Kakao, Cohere
+- API 키: OpenAI, Kakao
 - Langfuse 계정 (선택, 모니터링)
 
 ### 1. 환경 설정
@@ -393,7 +393,11 @@ python scripts/build_vector_index.py
 ### 5. 앱 실행
 
 ```bash
+# Streamlit (로컬 테스트용)
 streamlit run app/streamlit_app.py
+
+# Next.js 프론트엔드 (로컬)
+cd frontend && npm install && npm run dev
 ```
 
 ### 6. 평가
@@ -409,8 +413,17 @@ python -m tests.eval.run_eval --mode routing  # 라우팅 정확도만 빠르게
 
 ```
 multi-agent/
+├── frontend/                     # Next.js 15 프론트엔드 (Vercel 배포)
+│   ├── app/                      # App Router (layout.tsx, page.tsx)
+│   ├── components/               # ChatPanel, MapPanel, Sidebar
+│   ├── hooks/                    # 커스텀 훅
+│   ├── public/                   # 정적 자산 (GeoJSON 등)
+│   ├── types/                    # TypeScript 타입
+│   ├── next.config.mjs
+│   ├── package.json
+│   └── vercel.json
 ├── app/
-│   └── streamlit_app.py          # Streamlit UI (채팅 + pydeck 지도)
+│   └── streamlit_app.py          # Streamlit UI (구버전 · 로컬 테스트용)
 ├── docs/
 │   └── architecture.png          # 아키텍처 다이어그램
 ├── rag/
@@ -429,8 +442,7 @@ multi-agent/
 │   │   ├── data_query.py
 │   │   ├── prediction.py
 │   │   ├── rag_agent.py
-│   │   ├── anomaly.py
-│   │   └── report.py
+│   │   └── anomaly.py
 │   ├── tools/                    # 에이전트 도구 함수
 │   ├── db/                       # SQLAlchemy 모델 + DB 엔진
 │   ├── team.py                   # Swarm 조립 + stream_chat()
@@ -450,18 +462,20 @@ multi-agent/
 
 | 서비스 | URL |
 |--------|-----|
-| **Streamlit 앱** | http://54.88.155.235:8501 |
-| **FastAPI** | http://54.88.155.235:8000/docs |
+| **Next.js (프론트엔드)** | https://multi-agent-b9xv.vercel.app |
+| **FastAPI** | http://98.84.101.118:8000/docs |
+| **Streamlit (구버전 UI)** | http://98.84.101.118:8501 |
 
 ### 인프라
 
-- **서버**: AWS EC2 t3.small (Ubuntu 22.04)
-- **배포 방식**: Docker Compose (컨테이너 3개)
+- **프론트엔드**: Next.js 15 (App Router) → **Vercel** (https://multi-agent-b9xv.vercel.app)
+- **백엔드**: FastAPI + PostgreSQL 17 → AWS EC2 t3.small (Ubuntu 22.04) Docker Compose
+- **HTTPS 연결**: Cloudflare Tunnel (Mixed Content 해결)
 
 ```
-multi_agent_streamlit  — Streamlit UI       :8501
 multi_agent_fastapi    — FastAPI 백엔드      :8000
 multi_agent_postgres   — PostgreSQL 17       :5432 (내부)
+multi_agent_streamlit  — Streamlit UI       :8501 (구버전)
 ```
 
 ### EC2 배포 절차
@@ -472,7 +486,7 @@ scp -i <PEM_KEY> \
   app/streamlit_app.py \
   src/multi_agent/db/models.py \
   src/multi_agent/rag/district_codes.json \
-  ubuntu@54.88.155.235:~/multi-agent/
+  ubuntu@98.84.101.118:~/multi-agent/
 
 # 2. 컨테이너에 반영
 docker cp ~/multi-agent/streamlit_app.py multi_agent_streamlit:/app/app/streamlit_app.py
