@@ -395,9 +395,6 @@ python scripts/build_vector_index.py
 ### 5. 앱 실행
 
 ```bash
-# Streamlit (로컬 테스트용)
-streamlit run app/streamlit_app.py
-
 # Next.js 프론트엔드 (로컬)
 cd frontend && npm install && npm run dev
 ```
@@ -424,8 +421,6 @@ multi-agent/
 │   ├── next.config.mjs
 │   ├── package.json
 │   └── vercel.json
-├── app/
-│   └── streamlit_app.py          # Streamlit UI (구버전 · 로컬 테스트용)
 ├── docs/
 │   └── architecture.png          # 아키텍처 다이어그램
 ├── rag/
@@ -467,7 +462,6 @@ multi-agent/
 |--------|-----|
 | **Next.js (프론트엔드)** | https://multi-agent-b9xv.vercel.app |
 | **FastAPI** | http://98.84.101.118:8000/docs |
-| **Streamlit (구버전 UI)** | http://98.84.101.118:8501 |
 
 ### 인프라
 
@@ -478,7 +472,6 @@ multi-agent/
 ```
 multi_agent_fastapi    — FastAPI 백엔드      :8000
 multi_agent_postgres   — PostgreSQL 17       :5432 (내부)
-multi_agent_streamlit  — Streamlit UI       :8501 (구버전)
 ```
 
 ### EC2 배포 절차
@@ -486,23 +479,20 @@ multi_agent_streamlit  — Streamlit UI       :8501 (구버전)
 ```bash
 # 1. 파일 전송 (로컬 → EC2)
 scp -i <PEM_KEY> \
-  app/streamlit_app.py \
   src/multi_agent/db/models.py \
   src/multi_agent/rag/district_codes.json \
   ubuntu@98.84.101.118:~/multi-agent/
 
 # 2. 컨테이너에 반영
-docker cp ~/multi-agent/streamlit_app.py multi_agent_streamlit:/app/app/streamlit_app.py
-docker cp ~/multi-agent/models.py        multi_agent_fastapi:/app/src/multi_agent/db/models.py
+docker cp ~/multi-agent/models.py           multi_agent_fastapi:/app/src/multi_agent/db/models.py
 docker cp ~/multi-agent/district_codes.json multi_agent_fastapi:/app/src/multi_agent/rag/district_codes.json
-docker cp ~/multi-agent/district_codes.json multi_agent_streamlit:/app/src/multi_agent/rag/district_codes.json
 
 # 3. DB 마이그레이션 (테이블 변경 시)
 docker compose exec -T fastapi python -c \
   "from src.multi_agent.db.database import init_db; init_db()"
 
 # 4. 재시작
-docker compose restart streamlit
+docker compose restart fastapi
 ```
 
 ---

@@ -48,27 +48,14 @@ services:
         condition: service_completed_successfully
     restart: unless-stopped
 
-  streamlit:
-    build: .
-    container_name: multi_agent_streamlit
-    command: streamlit run app/streamlit_app.py --server.port 8501 --server.address 0.0.0.0 --server.headless true
-    ports:
-      - "8501:8501"
-    env_file: .env
-    environment:
-      - API_BASE=http://fastapi:8000
-    depends_on:
-      - fastapi
-    restart: unless-stopped
-
 volumes:
   pgdata:
 
 # ── 실행 방법 ────────────────────────────────────────────────────
 # 최초 실행:  docker compose up -d --build
-# 업데이트:   docker compose up -d --build fastapi streamlit
+# 업데이트:   docker compose up -d --build fastapi
 # 로그 확인:  docker compose logs -f fastapi
 # DB 접속:    docker compose exec postgres psql -U admin -d realestate
 #
 # EC2 배포 시: .env의 POSTGRES_PASSWORD, OPENAI_API_KEY 등 교체 후 동일하게 실행
-#              보안그룹에서 8501(Streamlit), 8000(FastAPI) 포트 허용
+#              보안그룹에서 8000(FastAPI) 포트 허용
