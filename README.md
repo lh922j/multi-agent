@@ -20,7 +20,7 @@
 | 에이전트 프레임워크 | AutoGen 0.4 Swarm + Handoff (`autogen-agentchat==0.4.9.3`) |
 | LLM | GPT-4o-mini |
 | 가격 예측 모델 | LightGBM (수도권 실거래 1,129,994건 학습, R² 0.88) |
-| Vector RAG | ChromaDB + Cohere Re-ranking (`rerank-multilingual-v3.0`) |
+| Vector RAG | ChromaDB + BM25 (Kiwi 형태소분석) → RRF 병합 → FlashRank 재정렬 |
 | DB | PostgreSQL 17 (Docker) |
 | 모니터링 | Langfuse (에이전트별 실행 흐름 추적) |
 | 프론트엔드 | Next.js 15 (App Router) + Kakao Maps API · **Vercel 배포** |
@@ -154,7 +154,7 @@ DB 데이터를 동 단위로 집계해 자동 생성한 `.txt` 문서입니다.
 - 버스정류장: 134개 (1km 이내)
 ```
 
-검색 흐름: 동명 직접 조회 → 벡터 유사도 검색 (후보 10개) → **Cohere Re-ranking** (최종 3개 선택)
+검색 흐름: 동명 직접 조회 → BM25 키워드 검색 + 벡터 유사도 검색 (각 15개 후보) → **RRF 병합** → **FlashRank 재정렬** (최종 3개 선택)
 
 ---
 
