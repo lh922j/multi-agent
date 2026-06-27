@@ -9,7 +9,7 @@
 
 ## 화면
 
-![UI 스크린샷](docs/ui_chat.png)
+![UI 스크린샷](docs/ui.png)
 
 ---
 
