@@ -17,10 +17,6 @@ class Settings(BaseSettings):
     # OpenAI
     openai_api_key: str = ""
 
-    # Pinecone (미사용, 추후 제거 예정)
-    pinecone_api_key: str = ""
-    pinecone_index_name: str = "realestate-graphrag"
-
     # PostgreSQL
     database_url: str = "postgresql+psycopg2://admin:admin1234@localhost:5432/realestate"
 
@@ -29,15 +25,8 @@ class Settings(BaseSettings):
     model_path: str = _DEFAULT_MODEL
     rent_model_path: str = str(Path(_DEFAULT_MODEL).parent / "price_model_rent_lgbm_complex.pkl")
 
-    # Cohere (Re-ranking)
-    cohere_api_key: str = ""
-
     # Kakao
     kakao_api_key: str = ""
-
-    # SGIS 행정구역 경계 API
-    sgis_service_id: str = ""     # 서비스 ID (= consumer_key)
-    sgis_security_key: str = ""   # 보안 키 (= consumer_secret)
 
     # Tavily Search (최신 뉴스·정책 웹 검색)
     tavily_api_key: str = ""

@@ -384,7 +384,9 @@ python scripts/import_commercial_csv.py # 상권
 
 ```bash
 # DB → 동별 .txt 문서 생성
-python scripts/build_rag_docs.py --top 200
+python scripts/build_commercial_docs.py       # 상권 문서
+python scripts/collect_school_district.py     # 학군 문서
+python scripts/collect_redevelopment.py       # 재개발·재건축 문서
 
 # ChromaDB 임베딩
 python scripts/build_vector_index.py
@@ -429,9 +431,10 @@ multi-agent/
 ├── rag/
 │   └── docs/                     # 동별 RAG 문서 197개 (.txt)
 ├── scripts/
-│   ├── build_rag_docs.py         # DB 집계 → 동별 문서 생성
+│   ├── build_commercial_docs.py  # 상권 DB → 동별 RAG 문서 생성
 │   ├── build_vector_index.py     # ChromaDB 임베딩·인덱싱
-│   ├── eval.py                   # 골든셋 자동 평가
+│   ├── collect_redevelopment.py  # 재개발·재건축 CSV → RAG 문서 생성
+│   ├── collect_school_district.py # 학교·학원 데이터 → 학군 RAG 문서 생성
 │   ├── import_commercial_csv.py  # 상권 CSV → PostgreSQL
 │   ├── import_education_csv.py   # 학교·학원 CSV → PostgreSQL
 │   ├── import_transport_csv.py   # 지하철·버스 CSV → PostgreSQL
