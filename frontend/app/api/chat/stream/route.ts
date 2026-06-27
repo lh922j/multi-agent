@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     });
   } catch (e) {
     const errMsg = e instanceof Error ? e.message : String(e);
-    const msg = `data: ${JSON.stringify({ type: "done", answer: `연결 실패: ${errMsg}`, map_points: [] })}\n\n`;
+    const msg = `data: ${JSON.stringify({ type: "done", answer: `연결 실패: ${errMsg} | API_BASE: ${API_BASE}`, map_points: [] })}\n\n`;
     return new Response(msg, {
       status: 200,
       headers: { "Content-Type": "text/event-stream" },
