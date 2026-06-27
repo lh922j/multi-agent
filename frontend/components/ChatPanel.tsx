@@ -93,7 +93,7 @@ export default function ChatPanel({ messages, streaming, onSend }: Props) {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
-            placeholder="부동산에 대해 무엇이든 질문하세요..."
+            placeholder="부동산 및 상권에 대해 무엇이든 질문하세요..."
             disabled={streaming}
             className="flex-1 px-5 py-3 rounded-full text-sm outline-none text-slate-700 disabled:opacity-50"
             style={{ background: "#F1F5F9", border: "1px solid #E2E8F0" }}

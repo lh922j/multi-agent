@@ -60,7 +60,7 @@ def _get_langfuse():
 
 
 def _build_swarm() -> Swarm:
-    termination = TextMentionTermination("TERMINATE") | MaxMessageTermination(30)
+    termination = TextMentionTermination("[[TERMINATE]]") | MaxMessageTermination(30)
     return Swarm(
         participants=[
             make_router(),
@@ -208,7 +208,7 @@ async def stream_chat(
             content = getattr(msg, "content", "")
             if not isinstance(content, str):
                 return None
-            clean = content.replace("TERMINATE", "").strip()
+            clean = content.replace("[[TERMINATE]]", "").strip()
             if not clean:
                 return None
             if any(p in clean.lower() for p in _SKIP):
@@ -331,7 +331,7 @@ async def stream_chat(
     # 히스토리 갱신 — user 질문 + 최종 답변만 저장
     # (HandoffMessage·중간 에이전트 메시지는 다음 Swarm 라우팅을 혼란시키므로 제외)
     prev_history = _HISTORY.get(thread_id, [])
-    clean_answer = final_text.replace("TERMINATE", "").strip() if final_text else ""
+    clean_answer = final_text.replace("[[TERMINATE]]", "").strip() if final_text else ""
     new_entry: list = [
         TextMessage(content=message, source="user"),
     ]

@@ -122,7 +122,7 @@ class KeywordRouterAgent(BaseChatAgent):
             return Response(
                 chat_message=TextMessage(
                     source=self.name,
-                    content=f"{_OFFSCOPE_REPLY}\nTERMINATE",
+                    content=f"{_OFFSCOPE_REPLY}\n[[TERMINATE]]",
                 )
             )
 
@@ -143,7 +143,7 @@ class KeywordRouterAgent(BaseChatAgent):
             return Response(
                 chat_message=TextMessage(
                     source=self.name,
-                    content=f"{_OFFSCOPE_REPLY}\nTERMINATE",
+                    content=f"{_OFFSCOPE_REPLY}\n[[TERMINATE]]",
                 )
             )
 

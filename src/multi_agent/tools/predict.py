@@ -1,17 +1,17 @@
 import json
-import os
-import subprocess
-import sys
+import warnings
+from functools import lru_cache
 from pathlib import Path
 
+import joblib
 import numpy as np
+import pandas as pd
 from loguru import logger
 
 from ..config import settings
 
 _MODEL_PATH = settings.model_path
 _RENT_MODEL_PATH = settings.rent_model_path
-_WORKER = str(Path(__file__).parent / "_predict_subprocess.py")
 _RAG_DIR = Path(__file__).parents[1] / "rag"
 
 with open(_RAG_DIR / "spatial_coords.json", encoding="utf-8") as _f:
@@ -39,20 +39,31 @@ def _min_dist_km(lat: float, lon: float, ref_coords: np.ndarray) -> float:
     return float(6371.0 * 2 * np.arcsin(np.sqrt(np.clip(a, 0, 1))).min())
 
 
-def _run_predict(row: dict) -> float:
-    env = os.environ.copy()
-    env.update({"OMP_NUM_THREADS": "1", "OPENBLAS_NUM_THREADS": "1", "MKL_NUM_THREADS": "1"})
-    result = subprocess.run(
-        [sys.executable, _WORKER, _MODEL_PATH],
-        input=json.dumps(row),
-        capture_output=True,
-        text=True,
-        timeout=30,
-        env=env,
-    )
-    if result.returncode != 0:
-        raise RuntimeError(result.stderr.strip() or f"exit code {result.returncode}")
-    return float(result.stdout.strip())
+@lru_cache(maxsize=2)
+def _load_bundle(model_path: str) -> dict:
+    """모델을 최초 1회만 로드하고 프로세스 수명 동안 캐싱."""
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        bundle = joblib.load(model_path)
+    bundle["model"].set_params(n_jobs=1)
+    bundle["_encoders"] = {
+        col: {cls: i for i, cls in enumerate(le.classes_)}
+        for col, le in bundle.get("label_encoders", {}).items()
+    }
+    return bundle
+
+
+def _run_predict(model_path: str, row: dict) -> float:
+    bundle = _load_bundle(model_path)
+    row = dict(row)
+    for col, mapping in bundle["_encoders"].items():
+        if col in row:
+            row[col] = mapping.get(str(row[col]), mapping.get("unknown", 0))
+    df = pd.DataFrame(
+        [[row[f] for f in bundle["feature_names"]]],
+        columns=bundle["feature_names"],
+    ).astype("float64")
+    return float(bundle["model"].predict(df)[0])
 
 
 def predict_price(
@@ -102,7 +113,7 @@ def predict_price(
 
     logger.info(f"[predict] area={area_exclusive}㎡ floor={floor} sgg={district_code}")
     try:
-        log_pred = _run_predict(row)
+        log_pred = _run_predict(_MODEL_PATH, row)
         predicted = int(np.expm1(log_pred))
         return (
             f"예측 매매가: {predicted:,}만원 ({predicted / 10000:.2f}억원)\n"
@@ -157,17 +168,8 @@ def predict_rent_price(
 
     logger.info(f"[predict_rent] area={area_exclusive}㎡ floor={floor} sgg={district_code}")
     try:
-        log_pred = subprocess.run(
-            [sys.executable, _WORKER, _RENT_MODEL_PATH],
-            input=json.dumps(row),
-            capture_output=True,
-            text=True,
-            timeout=30,
-            env={**__import__("os").environ, "OMP_NUM_THREADS": "1", "OPENBLAS_NUM_THREADS": "1", "MKL_NUM_THREADS": "1"},
-        )
-        if log_pred.returncode != 0:
-            raise RuntimeError(log_pred.stderr.strip())
-        predicted = int(np.expm1(float(log_pred.stdout.strip())))
+        log_pred = _run_predict(_RENT_MODEL_PATH, row)
+        predicted = int(np.expm1(log_pred))
         return (
             f"예측 전세 보증금: {predicted:,}만원 ({predicted / 10000:.2f}억원)\n"
             f"입력 조건: {area_exclusive}㎡ / {floor}층 / {build_year}년 준공 / {district_code}"

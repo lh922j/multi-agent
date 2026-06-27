@@ -203,7 +203,6 @@ def query_commercial_data(
                 "OR mid_category ILIKE :cat_pat)"
             )
         params["cat_pat"] = f"%{cat_key}%"
-        params["cat_exact"] = raw_cat  # exact 매칭용 (미사용시 무해)
 
     # commercial_area용 cat_filter (large_category만 존재)
     area_cat_filter = ""

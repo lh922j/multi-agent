@@ -24,8 +24,8 @@
 | DB | PostgreSQL 17 (Docker) |
 | 모니터링 | Langfuse (에이전트별 실행 흐름 추적) |
 | 프론트엔드 | Next.js 15 (App Router) + Kakao Maps API · **Vercel 배포** |
-| 백엔드 배포 | AWS EC2 (Docker Compose) + Cloudflare Tunnel (HTTPS 프록시) |
-| 평균 응답 시간 | **5.66초** (GEval 0.875 / 라우팅 100%) |
+| 백엔드 배포 | AWS EC2 (Docker Compose) + Vercel API route proxy |
+| 평균 응답 시간 | **7.30초** (GEval 0.904 / 라우팅 100%) |
 
 ---
 
@@ -56,7 +56,7 @@ LangGraph도 검토했으나, AutoGen Swarm을 선택한 이유는 **Handoff 패
 
 ## 에이전트 구조
 
-질문이 들어오면 하이브리드 라우터가 유형을 분류하고, 담당 에이전트가 직접 최종 답변을 작성합니다. (ReportAgent 제거 — 응답 속도 34% 향상)
+질문이 들어오면 하이브리드 라우터가 유형을 분류하고, 담당 에이전트가 직접 최종 답변을 작성합니다. (ReportAgent 제거 — 응답 속도 30% 향상)
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -76,7 +76,7 @@ LangGraph도 검토했으나, AutoGen Swarm을 선택한 이유는 **Handoff 패
 DataQuery  Prediction   RAG      Anomaly   즉시 거부
   Agent      Agent     Agent      Agent    (LLM 없음)
    │          │          │          │          │
-   │  답변 + TERMINATE 직접 작성       │          │
+   │  답변 + [[TERMINATE]] 직접 작성    │          │
    └──────────┴──────────┴──────────┘          │
                      │                         │
                      ▼                         ▼
@@ -175,12 +175,11 @@ pytest tests/eval/test_system_metrics.py      # 라우팅·latency (CI)
 | 지표 | 결과 | 설명 |
 |------|------|------|
 | **라우팅 정확도** | **100%** | 56건 전체 올바른 에이전트로 라우팅 |
-| **GEval (LLM-as-Judge)** | **0.875 / 1.0** | 답변 관련성·완결성 종합 |
-| **Faithfulness** | **0.914 / 1.0** | DB 데이터에 근거한 사실성 |
-| **Answer Relevancy** | **0.837 / 1.0** | 질문 대비 답변 적합성 |
-| **수치 정확도** | **97.1%** | 가격·수량 수치가 참조값 범위 내에 있는 비율 |
+| **GEval (LLM-as-Judge)** | **0.904 / 1.0** | 답변 관련성·완결성 종합 |
+| **Faithfulness** | **0.936 / 1.0** | DB 데이터에 근거한 사실성 |
+| **Answer Relevancy** | **0.865 / 1.0** | 질문 대비 답변 적합성 |
 | **Map Points 정확도** | **91.1%** | 지도 마커 반환 여부 |
-| **평균 응답 시간** | **5.66초** | ReportAgent 제거 후 34% 개선 (기존 10.25초) |
+| **평균 응답 시간** | **7.30초** | ReportAgent 제거 후 30% 개선 (기존 10.25초) |
 | **범위 외 거부 응답** | **0.2초** | LLM 없이 키워드 규칙만으로 즉시 거부 |
 
 ### 지표 개선 과정 (22건 → 56건)
@@ -188,77 +187,21 @@ pytest tests/eval/test_system_metrics.py      # 라우팅·latency (CI)
 | 지표 | 초기 (22건) | 최종 (56건) | 변화 |
 |------|------------|------------|------|
 | 라우팅 정확도 | 100% | **100%** | → |
-| GEval | 0.893 | **0.875** | ↓ (56건 난이도 분산) |
-| Faithfulness | 0.831 | **0.914** | ↑ +8.3pp |
-| Answer Relevancy | 0.594 | **0.837** | ↑ +24.3pp |
-| 수치 정확도 | 0.769 | **0.971** | ↑ +20.2pp |
+| GEval | 0.893 | **0.904** | ↓ (56건 난이도 분산) |
+| Faithfulness | 0.831 | **0.936** | ↑ +10.5pp |
+| Answer Relevancy | 0.594 | **0.865** | ↑ +27.1pp |
 
 ### 성능 개선 상세
 
-#### 수치 정확도: 76.9% → 97.1% (+20.2pp)
+#### Answer Relevancy: 59.4% → 86.5% (+27.1pp)
 
-**원인 분석**
+**원인 분석 1 — [[TERMINATE]] 태그가 DeepEval에 전달**
 
-`query_trade_data`가 개별 거래 목록만 반환하면, LLM이 여러 행을 보고 요약하는 과정에서 숫자를 자의적으로 올림·어림하는 현상이 발생했습니다.
-
-```
-DB 반환: 19.8억, 21.3억, 18.5억, 22.1억 ...
-LLM 답변: "약 20억 원 수준입니다"  ← 자의적 올림
-```
-
-또한 평가 메트릭 자체에도 버그가 있었습니다. `"300~600개"` 같은 범위 표현에서 앞 숫자(300)를 캡처하지 못해 `"600개"` 하나만 기준으로 삼아 실제 정답(401개)도 범위 밖으로 판정했습니다.
-
-**개선 방법 1 — 도구 반환값에 집계 통계 고정**
-
-LLM이 숫자를 새로 계산하지 않도록, 도구가 결과를 반환하기 전에 평균·최저·최고를 미리 계산해 첫 줄에 박아두었습니다.
-
-```python
-# src/multi_agent/tools/query_trade.py
-amounts = [r.deal_amount for r in text_rows]
-avg_eok = sum(amounts) / len(amounts) / 10000
-lines = [
-    f"▶ 평균 {avg_eok:.1f}억원 | 최저 {min_eok:.1f}억원 | 최고 {max_eok:.1f}억원 (조회 {len(amounts)}건)",
-    ...
-]
-```
-
-**개선 방법 2 — 에이전트 프롬프트에 숫자 인용 규칙 추가**
-
-집계 통계를 도구에 박아두더라도 LLM이 무시하면 소용없으므로, DataQueryAgent 시스템 프롬프트에 인용 규칙을 명시했습니다.
-
-```
-## 숫자 인용 규칙 (절대 준수)
-- 도구가 반환한 "▶ 평균 X억원 | 최저 Y억원 | 최고 Z억원" 수치를 그대로 인용하세요.
-- 숫자를 반올림·어림·변형하지 마세요.
-- 도구에 없는 수치를 추론하거나 만들어내지 마세요.
-```
-
-**개선 방법 3 — 평가 메트릭 파싱 로직 수정**
-
-`"X~Y개"` 범위에서 앞 숫자를 캡처하는 정규식 추가, `"이상"/"이하"` 키워드가 포함된 참조값에 대해 단방향 비교(≥ ref_min, ≤ ref_max)를 적용했습니다.
-
-```python
-# tests/eval/metrics.py — 수정 전후
-# 수정 전: "300~600개" → [600.0] 만 캡처 → 401개 범위 밖 → 0점
-# 수정 후: "300~600개" → [300.0, 600.0] 캡처 → 401개 범위 내 → 1점
-
-# "이상" 시맨틱
-if "이상" in reference:
-    if any(v >= ref_min * 0.9 for v in ans_vals):
-        return 1.0  # 2,570개 ≥ 1,000개 이상 → 통과
-```
-
----
-
-#### Answer Relevancy: 59.4% → 83.7% (+24.3pp)
-
-**원인 분석 1 — TERMINATE 태그가 DeepEval에 전달**
-
-에이전트 답변에는 Swarm 종료 신호인 `TERMINATE`가 마지막 줄에 포함됩니다. 이 태그가 제거되지 않은 채 DeepEval에 전달되면, AnswerRelevancyMetric이 `"TERMINATE"`를 하나의 문장으로 인식해 "질문과 무관한 문장"으로 판정하고 점수를 낮췄습니다.
+에이전트 답변에는 Swarm 종료 신호인 `[[TERMINATE]]`가 마지막 줄에 포함됩니다. 이 태그가 제거되지 않은 채 DeepEval에 전달되면, AnswerRelevancyMetric이 `"[[TERMINATE]]"`를 하나의 문장으로 인식해 "질문과 무관한 문장"으로 판정하고 점수를 낮췄습니다.
 
 ```python
 # tests/eval/run_eval.py — 수정
-clean_answer = answer.replace("TERMINATE", "").strip()  # 추가
+clean_answer = answer.replace("[[TERMINATE]]", "").strip()  # 추가
 tc = make_deepeval_test_case(actual_output=clean_answer, ...)
 ```
 
@@ -285,9 +228,9 @@ if case.get("expected_agent") == "OFFSCOPE":
 
 ---
 
-#### Faithfulness: 83.1% → 91.4% (+8.3pp)
+#### Faithfulness: 83.1% → 93.6% (+10.5pp)
 
-수치 정확도 개선 과정에서 도입한 **집계 통계 고정**이 Faithfulness에도 긍정적으로 작용했습니다. LLM이 도구 반환값 기반으로만 답변하도록 제약하면서, 환각(hallucination)이 줄고 DB 데이터에 근거한 사실성이 높아졌습니다.
+도입한 **집계 통계 고정**이 Faithfulness에도 긍정적으로 작용했습니다. LLM이 도구 반환값 기반으로만 답변하도록 제약하면서, 환각(hallucination)이 줄고 DB 데이터에 근거한 사실성이 높아졌습니다.
 
 ---
 
@@ -467,7 +410,7 @@ multi-agent/
 
 - **프론트엔드**: Next.js 15 (App Router) → **Vercel** (https://multi-agent-b9xv.vercel.app)
 - **백엔드**: FastAPI + PostgreSQL 17 → AWS EC2 t3.small (Ubuntu 22.04) Docker Compose
-- **HTTPS 연결**: Cloudflare Tunnel (Mixed Content 해결)
+- **HTTPS 연결**: Vercel API route proxy (Next.js → EC2 서버사이드 프록시)
 
 ```
 multi_agent_fastapi    — FastAPI 백엔드      :8000

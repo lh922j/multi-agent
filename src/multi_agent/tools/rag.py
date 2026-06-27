@@ -123,7 +123,7 @@ def search_area_info(query: str, mode: str = "local") -> str:
         mode: 'local' (특정 지역) 또는 'global' (광역 트렌드)
     """
     top_n = 3 if mode == "local" else 6
-    pool = min(15, 10)
+    pool = 15
 
     col = _get_collection()
     if col is None:
