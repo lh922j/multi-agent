@@ -303,7 +303,7 @@ export default function MapPanel({ messages }: Props) {
 
         {/* 에이전트 트레이스 */}
         {messages.some((m) => m.agentName) && (
-          <div>
+          <div className="p-3">
             <p className="text-xs font-semibold text-slate-500 mb-2">에이전트 처리 흐름</p>
             <div className="space-y-2">
               {messages.filter((m) => m.role === "assistant" && m.agentName).map((m, i, arr) => (
@@ -321,6 +321,23 @@ export default function MapPanel({ messages }: Props) {
             </div>
           </div>
         )}
+        {/* 데이터 현황 */}
+        <div className="border-t border-slate-100 px-3 py-3">
+          <p className="text-[10px] font-semibold uppercase tracking-wide mb-2" style={{ color: "#94A3B8" }}>데이터 현황</p>
+          <ul className="space-y-1.5">
+            {[
+              { color: "#2563EB", text: "부동산 실거래 113만건 (2020.01 ~ 2026.04) · 국토교통부 API" },
+              { color: "#7C3AED", text: "상권 272만건 · 소상공인시장진흥공단" },
+              { color: "#059669", text: "학교 1.2만개 · 학원 13.8만개 · 교육부" },
+              { color: "#D97706", text: "지하철 276역 · 버스정류장 22.7만개 · 서울교통공사 / 국토부" },
+            ].map((item) => (
+              <li key={item.color} className="flex items-start gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0" style={{ background: item.color }} />
+                <span className="text-[11px] text-slate-500 leading-snug">{item.text}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
     </div>
   );
