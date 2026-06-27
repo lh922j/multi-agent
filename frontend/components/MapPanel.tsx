@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { MapPoint, Message } from "@/types";
 
 declare global {
@@ -81,9 +81,9 @@ export default function MapPanel({ messages }: Props) {
   const [mapStatus, setMapStatus] = useState<"loading" | "ready" | "error">("loading");
   const [mapError, setMapError] = useState("");
 
-  const lastMsg = [...messages].reverse().find((m) => m.role === "assistant");
-  const mapPoints: MapPoint[] = lastMsg?.mapPoints ?? [];
-  const lastUserMsg = [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
+  const lastMsg = useMemo(() => [...messages].reverse().find((m) => m.role === "assistant"), [messages]);
+  const mapPoints: MapPoint[] = useMemo(() => lastMsg?.mapPoints ?? [], [lastMsg]);
+  const lastUserMsg = useMemo(() => [...messages].reverse().find((m) => m.role === "user")?.content ?? "", [messages]);
 
   // ── GeoJSON 로드 (최초 1회) ────────────────────────────────
   useEffect(() => {
@@ -98,18 +98,36 @@ export default function MapPanel({ messages }: Props) {
   useEffect(() => {
     const KEY = process.env.NEXT_PUBLIC_KAKAO_MAP_KEY;
 
+    const loadMap = () => {
+      window.kakao.maps.load(() => {
+        if (!mapRef.current) return;
+        try {
+          kakaoMapRef.current = new window.kakao.maps.Map(mapRef.current, {
+            center: new window.kakao.maps.LatLng(37.5665, 126.9780),
+            level: 7,
+          });
+          setMapStatus("ready");
+        } catch (e) {
+          setMapStatus("error");
+          setMapError(String(e));
+        }
+      });
+    };
+
     if (!KEY || KEY === "your_kakao_map_key_here") {
-      setMapStatus("error");
-      setMapError("NEXT_PUBLIC_KAKAO_MAP_KEY가 .env.local에 설정되지 않았습니다.");
+      setTimeout(() => {
+        setMapStatus("error");
+        setMapError("NEXT_PUBLIC_KAKAO_MAP_KEY가 .env.local에 설정되지 않았습니다.");
+      }, 0);
       return;
     }
 
-    if (window.kakao?.maps?.Map) { initMap(); return; }
+    if (window.kakao?.maps?.Map) { loadMap(); return; }
 
     const existing = document.getElementById("kakao-sdk");
     if (existing) {
       const wait = setInterval(() => {
-        if (window.kakao?.maps) { clearInterval(wait); initMap(); }
+        if (window.kakao?.maps) { clearInterval(wait); loadMap(); }
       }, 100);
       return () => clearInterval(wait);
     }
@@ -117,7 +135,7 @@ export default function MapPanel({ messages }: Props) {
     const s = document.createElement("script");
     s.id = "kakao-sdk";
     s.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${KEY}&libraries=services&autoload=false`;
-    s.onload = initMap;
+    s.onload = loadMap;
     s.onerror = () => {
       setMapStatus("error");
       setMapError("스크립트 로드 실패 — API 키 또는 등록 도메인을 확인하세요.");
@@ -125,22 +143,6 @@ export default function MapPanel({ messages }: Props) {
     document.head.appendChild(s);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  function initMap() {
-    window.kakao.maps.load(() => {
-      if (!mapRef.current) return;
-      try {
-        kakaoMapRef.current = new window.kakao.maps.Map(mapRef.current, {
-          center: new window.kakao.maps.LatLng(37.5665, 126.9780),
-          level: 7,
-        });
-        setMapStatus("ready");
-      } catch (e) {
-        setMapStatus("error");
-        setMapError(String(e));
-      }
-    });
-  }
 
   // ── 마커 업데이트 ──────────────────────────────────────────
   useEffect(() => {
