@@ -1,9 +1,38 @@
 import json
+from functools import lru_cache
+from pathlib import Path
 from loguru import logger
 from sqlalchemy import text
 
 from ..db.database import get_engine
 from ._district import district_sql_filter
+
+
+@lru_cache(maxsize=1)
+def _load_station_coords() -> dict[str, list[float]]:
+    path = Path(__file__).parents[1] / "rag" / "spatial_coords.json"
+    with open(path, encoding="utf-8") as f:
+        return json.load(f).get("subway_stations", {})
+
+
+def _station_coords(place_name: str) -> tuple[float, float] | None:
+    """역명 → (lat, lng). spatial_coords.json 기반, Kakao API 불필요.
+
+    키 패턴이 두 가지라 두 방향으로 prefix 매칭:
+    - "강남역" → bare="강남" → "강남_2", "강남_신분당"
+    - "서울역" → bare="서울", place_name="서울역" → "서울역_1"
+    """
+    stations = _load_station_coords()
+    bare = place_name.rstrip("역")
+    for key in (bare, place_name):
+        if key in stations:
+            c = stations[key]
+            return float(c[0]), float(c[1])
+    matches = [v for k, v in stations.items()
+               if k.startswith(f"{bare}_") or k.startswith(f"{place_name}_")]
+    if matches:
+        return float(matches[0][0]), float(matches[0][1])
+    return None
 
 # 사용자 키워드 → DB large/mid_category 매핑
 # small_category에만 있는 키워드는 _SMALL_CATEGORY_KEYWORDS에 별도 관리
@@ -216,9 +245,11 @@ def query_commercial_data(
                 total = conn.execute(total_sql, params).scalar() or 0
 
                 if total == 0:
-                    # 지역명이 아닌 경우(역명·랜드마크 등) → 좌표 기반 1km 근처 검색
-                    from .query_nearby import _geocode, _bbox, _haversine_km
-                    coords = _geocode(district)
+                    # 역명 좌표 먼저 조회 (API 없이) → 없으면 Kakao 지오코딩 fallback
+                    coords = _station_coords(district)
+                    if coords is None:
+                        from .query_nearby import _geocode
+                        coords = _geocode(district)
                     if coords:
                         return _commercial_nearby_fallback(
                             conn, district, coords[0], coords[1],
