@@ -14,7 +14,8 @@ export async function POST(request: Request) {
       body: JSON.stringify(body),
     });
   } catch (e) {
-    const msg = `data: ${JSON.stringify({ type: "done", answer: "서버에 연결할 수 없습니다.", map_points: [] })}\n\n`;
+    const errMsg = e instanceof Error ? e.message : String(e);
+    const msg = `data: ${JSON.stringify({ type: "done", answer: `연결 실패: ${errMsg}`, map_points: [] })}\n\n`;
     return new Response(msg, {
       status: 200,
       headers: { "Content-Type": "text/event-stream" },
